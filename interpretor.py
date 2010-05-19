@@ -10,14 +10,6 @@ INT = re.compile("^[0-9]+$")
 
 WHITESPACE = re.compile("^\s+$")
 
-#write lexer & parser classes:
-#steps:
-#1. lexer: get tokens
-#2. parser: arrange tokens into tree
-#3. analysis: link references, ensure well-defined
-#4. output as s-expression
-
-
 #write eval, apply, defun, cond, quote
 
 #experiment with my own tail-recursion stack, to avoid recursion depth of python
@@ -123,10 +115,12 @@ def lex(myinput):
 
 def process_list_tokens(tokens):
     """Parses tokens in list form into an s-expression"""
+    if len(tokens) == 0: raise Exception("Parse error: missing tokens")
     if tokens[0] == ")":
         tokens.pop(0)
         return SExp("NIL")
     first = process_tokens(tokens)
+    if len(tokens) == 0: raise Exception("Parse error: missing tokens")
     if tokens[0] == ".": raise Exception("mixed notation not supported")
     second = process_list_tokens(tokens)
     return SExp(first, second)
@@ -134,6 +128,7 @@ def process_list_tokens(tokens):
 
 def process_tokens(tokens):
     """Parses tokens into an s-expression"""
+    if len(tokens) == 0: raise Exception("Parse error: missing tokens")
     if ATOM.match(tokens[0]):
         return SExp(tokens.pop(0))
     if tokens[0] == "(" and tokens[1] == ")":
@@ -143,10 +138,12 @@ def process_tokens(tokens):
     #recursively continue
     if not tokens.pop(0) == "(": raise Exception("missing open parentheses")
     first = process_tokens(tokens)
+    if len(tokens) == 0: raise Exception("Parse error: missing tokens")
     second = []
     if tokens[0] == ".":
         tokens.pop(0)
         second = process_tokens(tokens)
+        if len(tokens) == 0: raise Exception("Parse error: missing tokens")
         if not tokens.pop(0) == ")": raise Exception("missing close parentheses")
     else:
         second = process_list_tokens(tokens)
