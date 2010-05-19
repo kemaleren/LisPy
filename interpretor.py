@@ -1,10 +1,14 @@
 import re
 
-primitives = (NULL, TRUE) + (i for i in "CAR CDR CONS ATOM EQ NULL INT PLUS MINUS TIMES QUOTIENT REMAINDER LESS GREATER, COND, QUOTE, DEFUN".split())
+primitives = ["NULL", "TRUE"] + [i for i in "CAR CDR CONS ATOM EQ NULL INT PLUS MINUS TIMES QUOTIENT REMAINDER LESS GREATER, COND, QUOTE, DEFUN".split()]
 
+#some useful regexes:
+NULL = ("NIL")
+TRUE = ("T")
+ATOM = re.compile("^\w+$")
+INT = re.compile("^[0-9]+$")
 
-LIST = re.compile()
-DOT = re.compile()
+WHITESPACE = re.compile("^\s+$")
 
 #write lexer & parser classes:
 #steps:
@@ -18,26 +22,23 @@ DOT = re.compile()
 
 #experiment with my own tail-recursion stack, to avoid recursion depth of python
     
-class sexp:
-    #some useful regexes:
-    NULL = ("NIL")
-    TRUE = ("T")
-    ATOM = re.compile("^\w+$")
-    INT = re.compile("^[0-9]+$")
+class SExp:
 
-    def init(self, left, right=None):
+    def __init__(self, left, right=None):
         """Create an S-expression (left . right). If 'right' is not provided,
         'left' should be atomic.
 
         """
         if right is None:
             if not isinstance(left, str):
+                raise Exception("Not a string")
+            if not self._match(left, ATOM):
                 raise Exception("Not an atomic S-expression")
-            val = left
+            self.val = left
         else:
-            if not isinstance(left, sexp) or not isinstance(right, sexp):
+            if not isinstance(left, SExp) or not isinstance(right, SExp):
                 raise Exception("Not an S-expression")
-            val = (left, right)
+            self.val = (left, right)
 
     def _match(self, val, regex):
         result = regex.match(val)
@@ -97,4 +98,45 @@ class sexp:
     def less(self, other):
         self._compare(other, lambda a,b: a<b)
 
+
+def lex_dot_notation(myinput):
+    """A generator for tokens in myinput"""
+    my_atom = ""
+    for char in myinput:
+        if not my_atom == "":
+            if ATOM.match(char):
+                my_atom += char
+                continue
+            else:
+                yield my_atom
+                my_atom = ""
+        if WHITESPACE.match(char):
+            continue
+        elif char in "().": yield char
+        elif ATOM.match(char):
+            my_atom += char
+        else:
+            raise Exception("bad token: {0}".format(char))
+    if not my_atom == "":
+        yield my_atom
+
+
+def parse_dot_notation(tokens):
+    """Parses dot notation into an s-expression"""
+    if ATOM.match(tokens[0]):
+        return SExp(tokens.pop(0))
+    #recursively continue!!!
+    if not tokens.pop(0) == "(": raise Exception("mismatched parentheses")
+    first = parse_dot_notation(tokens)
+    if not tokens.pop(0) == ".": raise Exception("missing dot")
+    second = parse_dot_notation(tokens)
+    if not tokens.pop(0) == ")": raise Exception("mismatched parentheses")
+    return SExp(first, second)
         
+        
+def parse(myinput):
+    """Parses in input and returns it as an s-expression"""
+    tokens = [i for i in lex_dot_notation(myinput)]
+    sexp = parse_dot_notation(tokens)
+    if len(tokens) > 0: raise Exception("extra tokens found")
+    
