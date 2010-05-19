@@ -3,8 +3,8 @@ import sys
 import copy
 
 #some useful regexes:
-ATOM = re.compile("^\w+$")
-INT = re.compile("^[0-9]+$")
+ATOM = re.compile("^\w+$|^-[0-9]+$")
+INT = re.compile("^-?[0-9]+$")
 WHITESPACE = re.compile("^\s+$")
 
 NULL_VALUE = "NIL"
@@ -73,22 +73,23 @@ class SExp:
 
     def _arithmetic(self, other, op):
         if not self._int() or not other._int(): raise Exception("not an int")
-        return SExp(str(op(int(self.val), int(other.val))))
+        return SExp(str(op(int(self.val),
+                           int(other.val))))
 
     def plus(self, other):
-        self._arithmetic(other, lambda a,b: a+b)
+        return self._arithmetic(other, lambda a,b: a+b)
         
     def minus(self, other):
-        self._arithmetic(other, lambda a,b: a-b)
+        return self._arithmetic(other, lambda a,b: a-b)
 
     def times(self, other):
-        self._arithmetic(other, lambda a,b: a*b)
+        return self._arithmetic(other, lambda a,b: a*b)
 
     def quotient(self, other):
-        self._arithmetic(other, lambda a,b: a/b)
+        return self._arithmetic(other, lambda a,b: a/b)
 
     def remainder(self, other):
-        self._arithmetic(other, lambda a,b: a%b)
+        return self._arithmetic(other, lambda a,b: a%b)
 
     def _compare(self, other, op):
         if not self._int() or not other._int(): raise Exception("not an int")
@@ -96,10 +97,10 @@ class SExp:
         return NIL_sexp
         
     def greater(self, other):
-        self._compare(other, lambda a,b: a>b)
+        return self._compare(other, lambda a,b: a>b)
 
     def less(self, other):
-        self._compare(other, lambda a,b: a<b)
+        return self._compare(other, lambda a,b: a<b)
 
     def __repr__(self):
         if self._atom():
@@ -125,12 +126,13 @@ def lex(myinput):
         if WHITESPACE.match(char):
             continue
         elif char in "().": yield char
-        elif ATOM.match(char):
+        elif ATOM.match(char) or (char == "-" and my_atom == ""): #FIXME: a horrible hack for negative numbers!!!
             my_atom += char
         else:
             raise Exception("bad token: {0}".format(char))
     if not my_atom == "":
         yield my_atom
+
 
 def process_list_tokens(tokens):
     """Parses tokens in list form into an s-expression"""
@@ -185,8 +187,6 @@ def in_pairlist(exp, pairlist):
     
 
 def getval(exp, from_list):
-    import pdb
-    pdb.set_trace()
     if from_list._null(): return NIL_sexp
     if from_list.car()._atom(): raise Exception("a-list or d-list in wrong format")
     if exp._eq(from_list.car().car()): return from_list.car().cdr()
@@ -201,13 +201,11 @@ def addpairs(params, cur_args, to_list):
 
 
 def myeval(exp, aList, dList):
-    import pdb
-    pdb.set_trace()
     if exp._atom():
         if exp._int(): return exp
         if exp._eq(T_sexp): return T_sexp
         if exp._null(): return NIL_sexp
-        if in_pairList(exp, aList): return getVal(exp, alist)
+        if in_pairlist(exp, aList): return getVal(exp, alist)
         raise Exception("unbound variable: {0}".format(exp.val))
     if exp.car()._atom():
         if exp.car().val == "QUOTE": return exp.cdr()
@@ -235,6 +233,16 @@ def my_apply(f, x, aList, dList):
     if f.val == "ATOM": return x.car.atom()
     if f.val == "NULL": return x.null()
     if f.val == "EQ": return x.car().eq(x.car().cdr())
+
+    if f.val == "INT": return x.car().int()
+    if f.val == "PLUS": return x.car().plus(x.cdr().car())
+    if f.val == "MINUS": return x.car().minus(x.cdr().car())
+    if f.val == "TIMES": return x.car().times(x.cdr().car())
+    if f.val == "QUOTIENT": return x.car().quotient(x.cdr().car())
+    if f.val == "REMAINDER": return x.car().remainder(x.cdr().car())
+    if f.val == "LESS": return x.car().less(x.cdr().car())
+    if f.val == "GREATER": return x.car().greater(x.cdr().car())
+    
     return myeval(getval(f,dList).cdr(), addpairs(getval(f, dList).car(), x, aList), dList)
 
 
