@@ -102,10 +102,23 @@ class SExp:
     def less(self, other):
         return self._compare(other, lambda a,b: a<b)
 
+    def _is_list(self):
+        if self._null(): return True
+        if self._atom(): return False
+        if self.val[1]._is_list(): return True
+        return False
+
+    def _repr_helper(self):
+        if self._null():
+            return ""
+        return " {0}{1}".format(self.val[0], self.val[1]._repr_helper())
+
     def __repr__(self):
         if self._atom():
             return self.val
         else:
+            if self._is_list():
+                return "({0}{1})".format(self.val[0], self.val[1]._repr_helper())
             return "({0} . {1})".format(self.val[0], self.val[1])
 
 #basic S-expressions
