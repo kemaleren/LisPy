@@ -99,7 +99,7 @@ class SExp:
         self._compare(other, lambda a,b: a<b)
 
 
-def lex_dot_notation(myinput):
+def lex(myinput):
     """A generator for tokens in myinput"""
     my_atom = ""
     for char in myinput:
@@ -121,22 +121,27 @@ def lex_dot_notation(myinput):
         yield my_atom
 
 
-def parse_dot_notation(tokens):
-    """Parses dot notation into an s-expression"""
+def process_tokens(tokens):
+    """Parses tokens into an s-expression"""
     if ATOM.match(tokens[0]):
         return SExp(tokens.pop(0))
+    if tokens[0] == "(" and tokens[1] == ")":
+        tokens.pop(0)
+        tokens.pop(0)
+        return SExp("NIL")
     #recursively continue!!!
-    if not tokens.pop(0) == "(": raise Exception("mismatched parentheses")
-    first = parse_dot_notation(tokens)
+    if not tokens.pop(0) == "(": raise Exception("missing open parentheses")
+    first = process_tokens(tokens)
     if not tokens.pop(0) == ".": raise Exception("missing dot")
-    second = parse_dot_notation(tokens)
-    if not tokens.pop(0) == ")": raise Exception("mismatched parentheses")
+    second = process_tokens(tokens)
+    if not tokens.pop(0) == ")": raise Exception("missing close parentheses")
     return SExp(first, second)
         
         
 def parse(myinput):
     """Parses in input and returns it as an s-expression"""
-    tokens = [i for i in lex_dot_notation(myinput)]
-    sexp = parse_dot_notation(tokens)
+    tokens = [i for i in lex(myinput)]
+    sexp = process_tokens(tokens)
     if len(tokens) > 0: raise Exception("extra tokens found")
+    return sexp
     
