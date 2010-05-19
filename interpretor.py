@@ -221,7 +221,7 @@ def myeval(exp, aList, dList):
         if in_pairlist(exp, aList): return getVal(exp, alist)
         raise Exception("unbound variable: {0}".format(exp.val))
     if exp.car()._atom():
-        if exp.car().val == "QUOTE": return exp.cdr()
+        if exp.car().val == "QUOTE": return exp.cdr().car()
         if exp.car().val == "COND": return evcond(exp.cdr(), aList, dList)
         if exp.car().val == "DEFUN": 
             f = exp.cdr().car()
