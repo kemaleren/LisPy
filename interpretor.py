@@ -32,7 +32,7 @@ class SExp:
         if right is None:
             if not isinstance(left, str):
                 raise Exception("Not a string")
-            if not self._match(left, ATOM):
+            if ATOM.match(left) is None:
                 raise Exception("Not an atomic S-expression")
             self.val = left
         else:
@@ -40,13 +40,8 @@ class SExp:
                 raise Exception("Not an S-expression")
             self.val = (left, right)
 
-    def _match(self, val, regex):
-        result = regex.match(val)
-        if result is None: return False
-        return True
-
     def atom(self):
-        return self._match(val, ATOM)
+        return type(self.val) == type("")
         
     def eq(self, other):
         if not self.atom() or not other.atom(): raise Exception("Not an atomic S-expression")
@@ -58,15 +53,15 @@ class SExp:
 
     def int(self):
         if not self.atom(): return False
-        return self._match(val, INT)
+        return INT.match(self.val) is not None
 
     def car(self):
         if self.atom(): raise Exception("Atomic")
-        return val[0]
+        return self.val[0]
 
     def cdr(self):
         if self.atom(): raise Exception("Atomic")
-        return val[1]
+        return self.val[1]
 
     def _arithmetic(self, other, op):
         if not self.int() or not other.int(): raise Exception("not an int")
@@ -98,6 +93,12 @@ class SExp:
     def less(self, other):
         self._compare(other, lambda a,b: a<b)
 
+    def __repr__(self):
+        if self.atom():
+            return self.val
+        else:
+            return "({0} . {1})".format(self.val[0], self.val[1])
+
 
 def lex(myinput):
     """A generator for tokens in myinput"""
@@ -120,6 +121,16 @@ def lex(myinput):
     if not my_atom == "":
         yield my_atom
 
+def process_list_tokens(tokens):
+    """Parses tokens in list form into an s-expression"""
+    if tokens[0] == ")":
+        tokens.pop(0)
+        return SExp("NIL")
+    first = process_tokens(tokens)
+    if tokens[0] == ".": raise Exception("mixed notation not supported")
+    second = process_list_tokens(tokens)
+    return SExp(first, second)
+
 
 def process_tokens(tokens):
     """Parses tokens into an s-expression"""
@@ -129,12 +140,16 @@ def process_tokens(tokens):
         tokens.pop(0)
         tokens.pop(0)
         return SExp("NIL")
-    #recursively continue!!!
+    #recursively continue
     if not tokens.pop(0) == "(": raise Exception("missing open parentheses")
     first = process_tokens(tokens)
-    if not tokens.pop(0) == ".": raise Exception("missing dot")
-    second = process_tokens(tokens)
-    if not tokens.pop(0) == ")": raise Exception("missing close parentheses")
+    second = []
+    if tokens[0] == ".":
+        tokens.pop(0)
+        second = process_tokens(tokens)
+        if not tokens.pop(0) == ")": raise Exception("missing close parentheses")
+    else:
+        second = process_list_tokens(tokens)
     return SExp(first, second)
         
         
@@ -144,4 +159,3 @@ def parse(myinput):
     sexp = process_tokens(tokens)
     if len(tokens) > 0: raise Exception("extra tokens found")
     return sexp
-    
