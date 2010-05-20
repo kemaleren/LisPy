@@ -181,6 +181,8 @@ QUOTE = SExp("QUOTE")
 COND = SExp("COND")
 DEFUN = SExp("DEFUN")
 
+primitive_sexps = [SExp(i) for i in primitives]
+
 
 def lex(myinput):
     """A generator for tokens in myinput"""
@@ -310,7 +312,7 @@ def myeval(exp, aList, dList):
         if exp.car() == DEFUN:
             f = exp.cdr().car()
             if not f.non_int_atom(): raise LispException("'{0}' is not a valid function name".format(f))
-            #TODO: check whether trying to redefine a primitive
+            if f in primitive_sexps: raise LispException("cannot redefine primitive '{0}'".format(f))
             args = exp.cdr().cdr().car()
             body = exp.cdr().cdr().cdr().car()
             check_args(f, exp.cdr(), 3)
@@ -471,4 +473,3 @@ if __name__ == "__main__":
         print "will be executed in order. Otherwise, the interpreter starts."""
         print ""
         print ""
-
