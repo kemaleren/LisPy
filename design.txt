@@ -46,3 +46,5 @@ TODO:
 -Don't rely on Python for recursion: it only supports up to 1000 recursive calls, and
  has no support for tail recursion. Instead, use my own stack and implement tail
  recursion.
+-Find a more elegent way to represent primitives, rather than just instantiating them
+ from hard-coded strings.
