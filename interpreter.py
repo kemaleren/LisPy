@@ -44,56 +44,55 @@ class SExp(object):
             if not isinstance(left, SExp) or not isinstance(right, SExp):
                 raise LispException("not an S-expression")
             self.val = (left, right)
+        self.bool_sexps = {True: "T", False: "NIL"}
 
-    def _atom(self):
-        return type(self.val) == type("")
 
-    #todo: replace this repetition of code
-    def atom(self):
-        if self._atom(): return T
-        return NIL
+    def atom(self, sexp=False):
+        result = type(self.val) == type("")
+        if sexp: return SExp(self.bool_sexps[result])
+        return result
 
     def __eq__(self, other):
-        if not self._atom(): raise LispException("not an atomic S-expression: {0}".format(self))
-        if not other._atom(): raise LispException("not an atomic S-expression: {0}".format(other))
+        if not self.atom(): raise LispException("not an atomic S-expression: {0}".format(self))
+        if not other.atom(): raise LispException("not an atomic S-expression: {0}".format(other))
         return self.val.upper() == other.val.upper()
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    def eq(self, other):
-        if self.__eq__(other): return T
-        return NIL
+    def eq(self, other, sexp=False):
+        result = False
+        if self.__eq__(other): result = True
+        if sexp: return SExp(self.bool_sexps[result])
+        return result
 
-    def _null(self):
-        if self._atom():
-            if self.val.upper() == "NIL": return True
-        return False
+    def null(self, sexp=False):
+        result = False
+        if self.atom():
+            if self.val.upper() == "NIL": result = True
+        if sexp: return SExp(self.bool_sexps[result])
+        return result
 
-    def null(self):
-        if self._null(): return T
-        return NIL
-
-    def _int(self):
-        if not self._atom() or INT_regex.match(self.val) is None: return False
-        return True
-
-    def int(self):
-        if self._int(): return T
-        return NIL
+    def int(self, sexp=False):
+        result = False
+        if self.atom():
+            if INT_regex.match(self.val) is not None:
+                result = True
+        if sexp: return SExp(self.bool_sexps[result])
+        return result
 
     def car(self):
-        if self._atom(): raise LispException("cannot call CAR on atomic s-expression: {0}".format(self))
+        if self.atom(): raise LispException("cannot call CAR on atomic s-expression: {0}".format(self))
         return self.val[0]
 
     def cdr(self):
-        if self._atom():
+        if self.atom():
             raise LispException("cannot call CDR on atomic s-expression: {0}".format(self))
         return self.val[1]
 
     def _arithmetic(self, other, op):
-        if not self._int(): raise LispException("not an int: {0}".format(self))
-        if not other._int(): raise LispException("not an int: {0}".format(other))
+        if not self.int(): raise LispException("not an int: {0}".format(self))
+        if not other.int(): raise LispException("not an int: {0}".format(other))
         return SExp(str(op(int(self.val),
                            int(other.val))))
 
@@ -113,8 +112,8 @@ class SExp(object):
         return self._arithmetic(other, lambda a,b: a%b)
 
     def _compare(self, other, op):
-        if not self._int(): raise LispException("not an int: {0}".format(self))
-        if not other._int(): raise LispException("not an int: {0}".format(other))
+        if not self.int(): raise LispException("not an int: {0}".format(self))
+        if not other.int(): raise LispException("not an int: {0}".format(other))
         if op(int(self.val), int(other.val)): return T
         return NIL
 
@@ -125,29 +124,29 @@ class SExp(object):
         return self._compare(other, lambda a,b: a<b)
 
     def is_list(self):
-        if self._null(): return True
-        if self._atom(): return False
+        if self.null(): return True
+        if self.atom(): return False
         if self.val[1].is_list(): return True
         return False
 
     def length(self):
         if not self.is_list():
             raise LispException("calling length on non-list {0}".format(self))
-        if self._null(): return 0
+        if self.null(): return 0
         return 1+self.val[1].length()
 
     def non_int_atom(self):
-        if not self._atom(): return False
+        if not self.atom(): return False
         if NON_INT_ATOM_regex.match(self.val) is None: return False
         return True
 
     def _repr_helper(self):
-        if self._null():
+        if self.null():
             return ""
         return " {0}{1}".format(self.val[0], self.val[1]._repr_helper())
 
     def __repr__(self):
-        if self._atom():
+        if self.atom():
             return self.val
         else:
             if self.is_list():
@@ -268,22 +267,22 @@ def parse_gen(tokens):
 
 
 def in_pairlist(exp, pairlist):
-    if pairlist._null(): return False
-    if pairlist.car()._atom(): raise LispException("a-list or d-list in wrong format")
+    if pairlist.null(): return False
+    if pairlist.car().atom(): raise LispException("a-list or d-list in wrong format")
     if exp == pairlist.car().car(): return True
     return in_pairlist(exp, pairlist.cdr())
 
 
 def getval(exp, from_list):
-    if from_list._null(): return NIL
-    if from_list.car()._atom(): raise LispException("a-list or d-list in wrong format")
+    if from_list.null(): return NIL
+    if from_list.car().atom(): raise LispException("a-list or d-list in wrong format")
     if exp == from_list.car().car(): return from_list.car().cdr()
     return getval(exp, from_list.cdr())
 
 
 def addpairs(params, cur_args, to_list):
-    if params._null() and cur_args._null(): return to_list
-    if params._atom() or cur_args._atom(): raise LispException("pairs cannot be atoms")
+    if params.null() and cur_args.null(): return to_list
+    if params.atom() or cur_args.atom(): raise LispException("pairs cannot be atoms")
     pair = SExp(params.car(), cur_args.car())
     return addpairs(params.cdr(), cur_args.cdr(), SExp(pair, to_list))
 
@@ -295,13 +294,13 @@ def check_args(f, sexp, exp_len):
     
 
 def myeval(exp, aList, dList):
-    if exp._atom():
-        if exp._int(): return exp
+    if exp.atom():
+        if exp.int(): return exp
         if exp == T: return T
-        if exp._null(): return NIL
+        if exp.null(): return NIL
         if in_pairlist(exp, aList): return getval(exp, aList)
         raise LispException("unbound variable: {0}".format(exp))
-    if exp.car()._atom():
+    if exp.car().atom():
         if not exp.car().non_int_atom: raise LispException("'{0}' is not a valid function name or special form".format(exp.car()))
         #cdar because cdr only would give (quote 5) evaluating to (5), not 5. only takes one argument.
         if exp.car() == QUOTE:
@@ -321,7 +320,7 @@ def myeval(exp, aList, dList):
 
 
 def evlis(targetlist, aList, dList):
-    if targetlist._null(): return NIL
+    if targetlist.null(): return NIL
     return SExp(myeval(targetlist.car(), aList, dList),
                 evlis(targetlist.cdr(), aList, dList))
 
@@ -334,7 +333,7 @@ def my_apply(f, x, aList, dList):
     dList: a list of (fname . (arglist . body)) pairs.
 
     """
-    if not f._atom(): raise LispException("error: cannot call non-atom {0} as a function".format(f))
+    if not f.atom(): raise LispException("error: cannot call non-atom {0} as a function".format(f))
     #TODO: integrate the check_args call with the other primitives definitions + help.
     if f == CAR:
         check_args(f, x, 1)
@@ -347,17 +346,17 @@ def my_apply(f, x, aList, dList):
         return SExp(x.car(), x.cdr()) #two arguments
     if f == ATOM:
         check_args(f, x, 1)
-        return x.car().atom()
+        return x.car().atom(sexp=True)
     if f == NULL:
         check_args(f, x, 1)
-        return x.car().null()
+        return x.car().null(sexp=True)
     if f == EQ:
         check_args(f, x, 2)
-        return x.car().eq(x.cdr().car())
+        return x.car().eq(x.cdr().car(), sexp=True)
 
     if f == INT:
         check_args(f, x, 1)
-        return x.car().int()
+        return x.car().int(sexp=True)
     if f == PLUS:
         check_args(f, x, 2)
         return x.car().plus(x.cdr().car())
@@ -399,8 +398,8 @@ def defun(f, args, body, dList):
 
 
 def evcond(be, aList, dList):
-    if be._null(): raise LispException("boolean expression cannot be NIL")
-    if not (myeval(be.car().car(), aList, dList))._null():
+    if be.null(): raise LispException("boolean expression cannot be NIL")
+    if not (myeval(be.car().car(), aList, dList)).null():
         return myeval(be.car().cdr().car(), aList, dList)
     return evcond(be.cdr(), aList, dList)
 
