@@ -48,4 +48,6 @@ TODO:
  recursion.
 -Find a more elegent way to represent primitives, rather than just instantiating them
  from hard-coded strings.
+-Extend help system. Make it available to users, so that they can write help comments
+ for their user-defined functions.
 -Allow floats
