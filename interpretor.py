@@ -13,7 +13,7 @@ NULL_VALUE = "NIL"
 
 #experiment with my own tail-recursion stack, to avoid recursion depth of python
     
-class SExp:
+class SExp(object):
     def __init__(self, left, right=None):
         """Create an S-expression (left . right). If 'right' is not provided,
         'left' should be atomic.
@@ -252,13 +252,15 @@ def evlis(targetlist, aList, dList):
                 evlis(targetlist.cdr(), aList, dList))
 
 def my_apply(f, x, aList, dList):
-    if not f._atom(): raise Exception("error: {0} is not a known function".format(f))
+    
+    if not f._atom(): raise Exception("error: cannot call non-atom {0} as a function".format(f))
+    f.val = f.val.upper()
     if f.val == "CAR": return x.car().car()
     if f.val == "CDR": return x.car().cdr()
     if f.val == "CONS": return SExp(x.car(), x.cdr())
     if f.val == "ATOM": return x.car.atom()
     if f.val == "NULL": return x.null()
-    if f.val == "EQ": return x.car().eq(x.car().cdr())
+    if f.val == "EQ": return x.car().eq(x.cdr().car())
 
     if f.val == "INT": return x.car().int()
     if f.val == "PLUS": return x.car().plus(x.cdr().car())
@@ -268,6 +270,8 @@ def my_apply(f, x, aList, dList):
     if f.val == "REMAINDER": return x.car().remainder(x.cdr().car())
     if f.val == "LESS": return x.car().less(x.cdr().car())
     if f.val == "GREATER": return x.car().greater(x.cdr().car())
+
+    if f.val == "QUIT": exit()
     
     return myeval(getval(f,dList).cdr(), addpairs(getval(f, dList).car(), x, aList), dList)
 
@@ -312,6 +316,8 @@ def interpreter(dList):
             print bcolors.OKBLUE + " OUT: " + bcolors.ENDC + str(myeval(parse(tokens), NIL_sexp, dList))
             print ""
         except KeyboardInterrupt:
+            print ""
+            print "keyboard interrupt"
             print ""
         except Exception as inst:
             print bcolors.FAIL + " ERR: " + bcolors.ENDC + inst.args[0]
