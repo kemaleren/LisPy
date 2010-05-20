@@ -22,7 +22,7 @@ WHITESPACE_regex = re.compile("^\s+$")
 class LispException(Exception):
     pass
 
-primitives_string = "T NIL CAR CDR CONS ATOM EQ NULL INT PLUS MINUS TIMES QUOTIENT REMAINDER LESS GREATER COND QUOTE DEFUN + - % * / = < >"
+primitives_string = "T NIL CAR CDR CONS ATOM EQ NULL INT PLUS MINUS TIMES QUOTIENT REMAINDER LESS GREATER COND QUOTE DEFUN HELP QUIT + - % * / = < >"
 primitives = [i for i in primitives_string.split()]
 
 help_string = "Available primitives:\n{0}\n\nFurther help not currently available.".format(primitives_string)
@@ -177,8 +177,8 @@ class SExp(object):
 T = (SExp("T"),)
 NIL = (SExp("NIL"),)
 
-CAR = (SExp("CAR"), SExp("FIRST"),)
-CDR = (SExp("CDR"), SExp("REST"),)
+CAR = (SExp("CAR"),)
+CDR = (SExp("CDR"),)
 CONS = (SExp("CONS"),)
 ATOM = (SExp("ATOM"),)
 NULL = (SExp("NULL"),)
@@ -340,11 +340,10 @@ def addpairs(params, cur_args, to_list):
     return addpairs(params.cdr(), cur_args.cdr(), SExp(pair, to_list))
 
 
-def check_args(f, sexp, exp_len):
+def check_args(f, got_len, exp_len):
     """Ensures that a function or special form was called with the correct number of arguments"""
-    real_len = sexp.length()
-    if not real_len == exp_len:
-        raise LispException("{0} expects {1} argument; got {2}".format(f, exp_len, real_len))
+    if not got_len == exp_len:
+        raise LispException("{0} expects {1} argument; got {2}".format(f, exp_len, got_len))
     
 
 def eval_lisp(exp, aList, dList):
@@ -359,14 +358,14 @@ def eval_lisp(exp, aList, dList):
         if not exp.car().non_int_atom: raise LispException("'{0}' is not a valid function name or special form".format(exp.car()))
         #cdar because cdr only would give (quote 5) evaluating to (5), not 5. only takes one argument.
         if exp.car() in QUOTE:
-            check_args(exp.car(), exp.cdr(), 1)
+            check_args(exp.car(), exp.cdr().lengt(), 1)
             return exp.cdr().car() 
         if exp.car() in COND: return evcond(exp.cdr(), aList, dList)
         if exp.car() in DEFUN:
             f = exp.cdr().car()
             args = exp.cdr().cdr().car()
             body = exp.cdr().cdr().cdr().car()
-            check_args(f, exp.cdr(), 3)
+            check_args(f, exp.cdr().length(), 3)
             return defun(f, args, body, dList)
         return apply_lisp(exp.car(), evlis(exp.cdr(), aList, dList), aList, dList)
     raise LispException("eval called with invalid expression")
@@ -392,58 +391,58 @@ def apply_lisp(f, x, aList, dList):
     if not f.atom(): raise LispException("error: cannot call non-atom {0} as a function".format(f))
     #TODO: integrate the check_args call with the other primitives definitions + help.
     if f in CAR:
-        check_args(f, x, 1)
+        check_args(f, x.length(), 1)
         return x.car().car() #caar, because only have one argument: a list
     if f in CDR:
-        check_args(f, x, 1)
+        check_args(f, x.length(), 1)
         return x.car().cdr() #cadr
     if f in CONS:
-        check_args(f, x, 2)
+        check_args(f, x.length(), 2)
         return SExp(x.car(), x.cdr()) #two arguments
     if f in ATOM:
-        check_args(f, x, 1)
+        check_args(f, x.length(), 1)
         return x.car().atom(sexp=True)
     if f in NULL:
-        check_args(f, x, 1)
+        check_args(f, x.length(), 1)
         return x.car().null(sexp=True)
     if f in EQ:
-        check_args(f, x, 2)
+        check_args(f, x.length(), 2)
         return x.car().eq(x.cdr().car(), sexp=True)
 
     if f in INT:
-        check_args(f, x, 1)
+        check_args(f, x.length(), 1)
         return x.car().int(sexp=True)
     if f in PLUS:
-        check_args(f, x, 2)
+        check_args(f, x.length(), 2)
         return x.car().plus(x.cdr().car())
     if f in MINUS:
-        check_args(f, x, 2)
+        check_args(f, x.length(), 2)
         return x.car().minus(x.cdr().car())
     if f in TIMES:
-        check_args(f, x, 2)
+        check_args(f, x.length(), 2)
         return x.car().times(x.cdr().car())
     if f in QUOTIENT:
-        check_args(f, x, 2)
+        check_args(f, x.length(), 2)
         return x.car().quotient(x.cdr().car())
     if f in REMAINDER:
-        check_args(f, x, 2)
+        check_args(f, x.length(), 2)
         return x.car().remainder(x.cdr().car())
     if f in LESS:
-        check_args(f, x, 2)
+        check_args(f, x.length(), 2)
         return x.car().less(x.cdr().car())
     if f in GREATER:
-        check_args(f, x, 2)
+        check_args(f, x.length(), 2)
         return x.car().greater(x.cdr().car())
     if f in HELP:
-        check_args(f, x, 0)
+        check_args(f, x.length(), 0)
         print help_string
         return SExp("T")
     if f in QUIT:
-        check_args(f, x, 0)
+        check_args(f, x.length(), 0)
         exit()
     if not in_pairlist(f, dList): raise LispException("function {0} not found".format(f))
     params = getval(f, dList).car()
-    check_args(f, params, x.length())
+    check_args(f, x.length(), params.length())
     return eval_lisp(getval(f,dList).cdr(), addpairs(params, x, aList), dList)
 
 
