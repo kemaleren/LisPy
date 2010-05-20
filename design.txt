@@ -48,3 +48,4 @@ TODO:
  recursion.
 -Find a more elegent way to represent primitives, rather than just instantiating them
  from hard-coded strings.
+-Allow floats

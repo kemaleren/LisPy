@@ -28,6 +28,17 @@ primitives = [i for i in primitives_string.split()]
 help_string = "Available primitives:\n{0}\n\nFurther help not currently available.".format(primitives_string)
 
 class SExp(object):
+    """
+    The S-Expression class. Each s-expression can be atomic, or it has two s-expression children, CAR and CDR.
+
+    Member functions implement most of the basic primitive functions that are not special forms, such as
+    addition, subtraction, checking whether an integer, etc.
+
+    Boolean member functions return Python's True and False. However, if the optional 'sexp' argument evaluates to
+    True, they instead return the primitive s-expressions T and NIL.
+
+    """
+
     def __init__(self, left, right=None):
         """Create an S-expression (left . right). If 'right' is not provided,
         'left' should be atomic.
@@ -135,6 +146,7 @@ class SExp(object):
         return 1+self.val[1].length()
 
     def non_int_atom(self):
+        """Checks if this is an atom, but not an integer"""
         if not self.atom(): return False
         if INT_regex.match(self.val) is not None: return False
         return True
@@ -145,6 +157,11 @@ class SExp(object):
         return " {0}{1}".format(self.val[0], self.val[1]._repr_helper())
 
     def __repr__(self):
+        """
+        Creates the string representation of the S-expression. Uses list notation
+        whenever possible.
+
+        """
         if self.atom():
             return self.val
         else:
@@ -180,6 +197,7 @@ QUOTE = (SExp("QUOTE"),)
 COND = (SExp("COND"),)
 DEFUN = (SExp("DEFUN"),)
 
+#a list of all primitive s-expressions
 primitive_sexps = [SExp(i) for i in primitives]
 
 
@@ -206,10 +224,13 @@ def lex(myinput):
 
 
 def get_tokens(myinput):
+    """Returns all tokens in myinput"""
     return [i for i in lex(myinput)]
 
 
 def balanced(tokens):
+    """Returns true if parentheses are balanced"""
+
     count = 0
     for token in tokens:
         if token == "(": count += 1
@@ -219,7 +240,12 @@ def balanced(tokens):
 
 
 def process_list_tokens(tokens):
-    """Parses tokens in list form into an s-expression"""
+    """
+    Parses tokens in a partial list form into an s-expression
+
+    The tokens should have the form ')' 's1)' 's1 s2)' etc
+    
+    """
     if len(tokens) == 0: raise LispException("parse error: missing tokens")
     if tokens[0] == ")":
         tokens.pop(0)
@@ -232,7 +258,11 @@ def process_list_tokens(tokens):
 
 
 def process_tokens(tokens):
-    """Parses tokens into an s-expression"""
+    """
+    Destructively parses tokens into an s-expression
+    Stops after one s-expression and returns it, leaving any remaining tokens untouched
+    
+    """
     if len(tokens) == 0: raise LispException("parse error: missing tokens")
     if ATOM_regex.match(tokens[0]):
         sexp = SExp(tokens.pop(0))
@@ -270,6 +300,15 @@ def parse_gen(tokens):
 
 
 def in_pairlist(exp, pairlist):
+    """
+    Returns true if the s-expression 'exp' appears as the CAR of any of the s-expressions
+    in the s-expression 'pairlist'.
+
+    'pairlist' has the form ((a.b) (c.d) ... (e.f)) where the CAR of each element is atomic.
+
+    Used to check for function names in the D-list, and atom bindings in the A-list.
+
+    """
     if pairlist.null(): return False
     if pairlist.car().atom(): raise LispException("a-list or d-list in wrong format")
     if exp == pairlist.car().car(): return True
@@ -277,6 +316,12 @@ def in_pairlist(exp, pairlist):
 
 
 def getval(exp, from_list):
+    """
+    If 'exp' is the CAR of any of the s-expression pairs in the pairlist, returns that
+    s-expressions CDR.
+    Else returns NIL.
+
+    """
     if from_list.null(): return SExp("NIL")
     if from_list.car().atom(): raise LispException("a-list or d-list in wrong format")
     if exp == from_list.car().car(): return from_list.car().cdr()
@@ -284,6 +329,11 @@ def getval(exp, from_list):
 
 
 def addpairs(params, cur_args, to_list):
+    """
+    Adds pairs formed by zipping s-expressions in 'params' and 'cur_args' to the
+    pair list 'to_list'
+
+    """
     if params.null() and cur_args.null(): return to_list
     if params.atom() or cur_args.atom(): raise LispException("pairs cannot be atoms")
     pair = SExp(params.car(), cur_args.car())
@@ -291,12 +341,14 @@ def addpairs(params, cur_args, to_list):
 
 
 def check_args(f, sexp, exp_len):
+    """Ensures that a function or special form was called with the correct number of arguments"""
     real_len = sexp.length()
     if not real_len == exp_len:
         raise LispException("{0} expects {1} argument; got {2}".format(f, exp_len, real_len))
     
 
-def myeval(exp, aList, dList):
+def eval_lisp(exp, aList, dList):
+    """The classic 'eval' function. Evaluates an s-expression and returns the result"""
     if exp.atom():
         if exp.int(): return exp
         if exp in T: return SExp("T")
@@ -312,24 +364,25 @@ def myeval(exp, aList, dList):
         if exp.car() in COND: return evcond(exp.cdr(), aList, dList)
         if exp.car() in DEFUN:
             f = exp.cdr().car()
-            if not f.non_int_atom(): raise LispException("'{0}' is not a valid function name".format(f))
-            if f in primitive_sexps: raise LispException("cannot redefine primitive '{0}'".format(f))
             args = exp.cdr().cdr().car()
             body = exp.cdr().cdr().cdr().car()
             check_args(f, exp.cdr(), 3)
             return defun(f, args, body, dList)
-        return my_apply(exp.car(), evlis(exp.cdr(), aList, dList), aList, dList)
+        return apply_lisp(exp.car(), evlis(exp.cdr(), aList, dList), aList, dList)
     raise LispException("eval called with invalid expression")
 
 
 def evlis(targetlist, aList, dList):
+    """calls 'eval' on all elements of 'targetlist'"""
     if targetlist.null(): return SExp("NIL")
-    return SExp(myeval(targetlist.car(), aList, dList),
+    return SExp(eval_lisp(targetlist.car(), aList, dList),
                 evlis(targetlist.cdr(), aList, dList))
 
 
-def my_apply(f, x, aList, dList):
+def apply_lisp(f, x, aList, dList):
     """
+    The classic 'apply' function. Evaluates the body of a function 'f' with arguments 'x'
+
     f: a special form, primitive function, or a function in the dlist.
     x: a list of function arguments.
     aList: a list of (variable . binding) pairs.
@@ -391,19 +444,23 @@ def my_apply(f, x, aList, dList):
     if not in_pairlist(f, dList): raise LispException("function {0} not found".format(f))
     params = getval(f, dList).car()
     check_args(f, params, x.length())
-    return myeval(getval(f,dList).cdr(), addpairs(params, x, aList), dList)
+    return eval_lisp(getval(f,dList).cdr(), addpairs(params, x, aList), dList)
 
 
 def defun(f, args, body, dList):
+    """Evaluates the DEFUN special form. Adds a new function to the D-list"""
+    if not f.non_int_atom(): raise LispException("'{0}' is not a valid function name".format(f))
+    if f in primitive_sexps: raise LispException("cannot redefine primitive '{0}'".format(f))
     new_dList = SExp(SExp(f, SExp(args, body)), copy.copy(dList))
     dList.copy(new_dList)
     return f
 
 
 def evcond(be, aList, dList):
+    """Evaluates the COND special form"""
     if be.null(): raise LispException("boolean expression cannot be NIL")
-    if not (myeval(be.car().car(), aList, dList)).null():
-        return myeval(be.car().cdr().car(), aList, dList)
+    if not (eval_lisp(be.car().car(), aList, dList)).null():
+        return eval_lisp(be.car().cdr().car(), aList, dList)
     return evcond(be.cdr(), aList, dList)
 
 
@@ -424,8 +481,9 @@ class bcolors:
 
 
 def interpreter(dList):
+    """Runs the interactive toplevel"""
     print ""
-    print bcolors.OKBLUE + "Welcome to LISP" + bcolors.ENDC
+    print bcolors.PROMPT + "Welcome to LISP" + bcolors.ENDC
     print "Call (help) to see available primitives"
     print "Type 'Control+c' to cancel the current input"
     print "Call (quit) or type 'Control-d' to quit"
@@ -445,11 +503,12 @@ def interpreter(dList):
                 entry = raw_input("")
                 tokens += get_tokens(entry)
 
-            #read. parse(tokens) #parse the tokens and build an S-Expression
-            if len(tokens) > 0: raise LispException("extra tokens found: {0}".format(tokens))
+            #read. parse the tokens and build an S-Expression
+            sexp = parse(tokens)
+            if len(tokens) > 0: raise LispException("extra tokens found: {0}".format(" ".join(tokens)))
 
             #eval and print. the heart of the interpreter!
-            print bcolors.OKBLUE + " OUT: " + bcolors.ENDC + str(myeval(sexp, SExp("NIL"), dList))
+            print bcolors.OKBLUE + " OUT: " + bcolors.ENDC + str(eval_lisp(sexp, SExp("NIL"), dList))
             print ""
         except KeyboardInterrupt:
             print ""
@@ -468,12 +527,12 @@ if __name__ == "__main__":
             interpreter(dList)
         except EOFError:
             print ""
-    elif len(sys.argv) == 2:
+    elif len(sys.argv) == 2: #process a file of lisp expressions
         infile = file(sys.argv[1], "r")
         tokens = get_tokens(infile.read())
         for sexp in parse_gen(tokens):
             try:
-                print str(myeval(sexp, SExp("NIL"), dList))
+                print str(eval_lisp(sexp, SExp("NIL"), dList))
             except LispException as inst:
                 print "error: " + inst.args[0]
         infile.close()
