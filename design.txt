@@ -39,7 +39,7 @@ once the parentheses match, or once they clearly cannot match.
 
 TODO:
 ----
--Parsing negative integers is not as elegent as it could be.
+-Implement QUOTE as single quote: '
 -Implement the interactive toplevel using curses to allow more robust editing techniques.
  (multiline navigation, reverse incremental search, in-place editing, dumping history
  to file, etc.)

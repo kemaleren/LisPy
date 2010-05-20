@@ -13,8 +13,7 @@ import sys
 import copy
 
 #some useful regexes:
-ATOM_regex = re.compile("^\w+$|^-[0-9]+$")
-NON_INT_ATOM_regex = re.compile("^[a-zA-Z]+\w+$")
+ATOM_regex = re.compile("^[0-9a-zA-Z%*\-\+/=<>]+$")
 INT_regex = re.compile("^-?[0-9]+$")
 WHITESPACE_regex = re.compile("^\s+$")
 
@@ -23,7 +22,7 @@ WHITESPACE_regex = re.compile("^\s+$")
 class LispException(Exception):
     pass
 
-primitives_string = "T NIL CAR CDR CONS ATOM EQ NULL INT PLUS MINUS TIMES QUOTIENT REMAINDER LESS GREATER COND QUOTE DEFUN"
+primitives_string = "T NIL CAR CDR CONS ATOM EQ NULL INT PLUS MINUS TIMES QUOTIENT REMAINDER LESS GREATER COND QUOTE DEFUN + - % * / = < >"
 primitives = [i for i in primitives_string.split()]
 
 help_string = "Available primitives:\n{0}\n\nFurther help not currently available.".format(primitives_string)
@@ -114,8 +113,8 @@ class SExp(object):
     def _compare(self, other, op):
         if not self.int(): raise LispException("not an int: {0}".format(self))
         if not other.int(): raise LispException("not an int: {0}".format(other))
-        if op(int(self.val), int(other.val)): return T
-        return NIL
+        if op(int(self.val), int(other.val)): return SExp("T")
+        return SExp("NIL")
 
     def greater(self, other):
         return self._compare(other, lambda a,b: a>b)
@@ -137,7 +136,7 @@ class SExp(object):
 
     def non_int_atom(self):
         if not self.atom(): return False
-        if NON_INT_ATOM_regex.match(self.val) is None: return False
+        if INT_regex.match(self.val) is not None: return False
         return True
 
     def _repr_helper(self):
@@ -158,28 +157,28 @@ class SExp(object):
 
 #basic S-expressions
 #TODO: do this using the 'primitives' string above!!! Also integrate into a help system.
-T = SExp("T")
-NIL = SExp("NIL")
+T = (SExp("T"),)
+NIL = (SExp("NIL"),)
 
-CAR = SExp("CAR")
-CDR = SExp("CDR")
-CONS = SExp("CONS")
-ATOM = SExp("ATOM")
-NULL = SExp("NULL")
-EQ = SExp("EQ")
-INT = SExp("INT")
-PLUS = SExp("PLUS")
-MINUS = SExp("MINUS")
-TIMES = SExp("TIMES")
-QUOTIENT = SExp("QUOTIENT")
-REMAINDER = SExp("REMAINDER")
-LESS = SExp("LESS")
-GREATER = SExp("GREATER")
-QUIT = SExp("QUIT")
-HELP = SExp("HELP")
-QUOTE = SExp("QUOTE")
-COND = SExp("COND")
-DEFUN = SExp("DEFUN")
+CAR = (SExp("CAR"), SExp("FIRST"),)
+CDR = (SExp("CDR"), SExp("REST"),)
+CONS = (SExp("CONS"),)
+ATOM = (SExp("ATOM"),)
+NULL = (SExp("NULL"),)
+EQ = (SExp("EQ"), SExp("="),)
+INT = (SExp("INT"),)
+PLUS = (SExp("PLUS"), SExp("+"),)
+MINUS = (SExp("MINUS"), SExp("-"),)
+TIMES = (SExp("TIMES"), SExp("*"),)
+QUOTIENT = (SExp("QUOTIENT"), SExp("/"),)
+REMAINDER = (SExp("REMAINDER"), SExp("%"),)
+LESS = (SExp("LESS"), SExp("<"),)
+GREATER = (SExp("GREATER"), SExp(">"),)
+QUIT = (SExp("QUIT"),)
+HELP = (SExp("HELP"),)
+QUOTE = (SExp("QUOTE"),)
+COND = (SExp("COND"),)
+DEFUN = (SExp("DEFUN"),)
 
 primitive_sexps = [SExp(i) for i in primitives]
 
@@ -197,8 +196,8 @@ def lex(myinput):
                 my_atom = ""
         if WHITESPACE_regex.match(char):
             continue
-        elif char in "().": yield char
-        elif ATOM_regex.match(char) or (char == "-" and my_atom == ""): #FIXME: a horrible hack for negative numbers!!!
+        elif char in "().'": yield char
+        elif ATOM_regex.match(char):
             my_atom += char
         else:
             raise LispException("bad token: {0}".format(char))
@@ -224,7 +223,7 @@ def process_list_tokens(tokens):
     if len(tokens) == 0: raise LispException("parse error: missing tokens")
     if tokens[0] == ")":
         tokens.pop(0)
-        return NIL
+        return SExp("NIL")
     first = process_tokens(tokens)
     if len(tokens) == 0: raise LispException("parse error: missing tokens")
     if tokens[0] == ".": raise LispException("mixed notation not supported")
@@ -236,11 +235,12 @@ def process_tokens(tokens):
     """Parses tokens into an s-expression"""
     if len(tokens) == 0: raise LispException("parse error: missing tokens")
     if ATOM_regex.match(tokens[0]):
-        return SExp(tokens.pop(0))
+        sexp = SExp(tokens.pop(0))
+        return sexp
     if tokens[0] == "(" and tokens[1] == ")":
         tokens.pop(0)
         tokens.pop(0)
-        return NIL
+        return SExp("NIL")
     #recursively continue
     if not tokens.pop(0) == "(": raise LispException("missing open parentheses")
     first = process_tokens(tokens)
@@ -253,7 +253,8 @@ def process_tokens(tokens):
         if not tokens.pop(0) == ")": raise LispException("missing close parentheses")
     else:
         second = process_list_tokens(tokens)
-    return SExp(first, second)
+    sexp  = SExp(first, second)
+    return sexp
 
 
 def parse(tokens):
@@ -276,7 +277,7 @@ def in_pairlist(exp, pairlist):
 
 
 def getval(exp, from_list):
-    if from_list.null(): return NIL
+    if from_list.null(): return SExp("NIL")
     if from_list.car().atom(): raise LispException("a-list or d-list in wrong format")
     if exp == from_list.car().car(): return from_list.car().cdr()
     return getval(exp, from_list.cdr())
@@ -298,18 +299,18 @@ def check_args(f, sexp, exp_len):
 def myeval(exp, aList, dList):
     if exp.atom():
         if exp.int(): return exp
-        if exp == T: return T
-        if exp.null(): return NIL
+        if exp in T: return SExp("T")
+        if exp.null(): return SExp("NIL")
         if in_pairlist(exp, aList): return getval(exp, aList)
         raise LispException("unbound variable: {0}".format(exp))
     if exp.car().atom():
         if not exp.car().non_int_atom: raise LispException("'{0}' is not a valid function name or special form".format(exp.car()))
         #cdar because cdr only would give (quote 5) evaluating to (5), not 5. only takes one argument.
-        if exp.car() == QUOTE:
+        if exp.car() in QUOTE:
             check_args(exp.car(), exp.cdr(), 1)
             return exp.cdr().car() 
-        if exp.car() == COND: return evcond(exp.cdr(), aList, dList)
-        if exp.car() == DEFUN:
+        if exp.car() in COND: return evcond(exp.cdr(), aList, dList)
+        if exp.car() in DEFUN:
             f = exp.cdr().car()
             if not f.non_int_atom(): raise LispException("'{0}' is not a valid function name".format(f))
             if f in primitive_sexps: raise LispException("cannot redefine primitive '{0}'".format(f))
@@ -322,7 +323,7 @@ def myeval(exp, aList, dList):
 
 
 def evlis(targetlist, aList, dList):
-    if targetlist.null(): return NIL
+    if targetlist.null(): return SExp("NIL")
     return SExp(myeval(targetlist.car(), aList, dList),
                 evlis(targetlist.cdr(), aList, dList))
 
@@ -337,54 +338,54 @@ def my_apply(f, x, aList, dList):
     """
     if not f.atom(): raise LispException("error: cannot call non-atom {0} as a function".format(f))
     #TODO: integrate the check_args call with the other primitives definitions + help.
-    if f == CAR:
+    if f in CAR:
         check_args(f, x, 1)
         return x.car().car() #caar, because only have one argument: a list
-    if f == CDR:
+    if f in CDR:
         check_args(f, x, 1)
         return x.car().cdr() #cadr
-    if f == CONS:
+    if f in CONS:
         check_args(f, x, 2)
         return SExp(x.car(), x.cdr()) #two arguments
-    if f == ATOM:
+    if f in ATOM:
         check_args(f, x, 1)
         return x.car().atom(sexp=True)
-    if f == NULL:
+    if f in NULL:
         check_args(f, x, 1)
         return x.car().null(sexp=True)
-    if f == EQ:
+    if f in EQ:
         check_args(f, x, 2)
         return x.car().eq(x.cdr().car(), sexp=True)
 
-    if f == INT:
+    if f in INT:
         check_args(f, x, 1)
         return x.car().int(sexp=True)
-    if f == PLUS:
+    if f in PLUS:
         check_args(f, x, 2)
         return x.car().plus(x.cdr().car())
-    if f == MINUS:
+    if f in MINUS:
         check_args(f, x, 2)
         return x.car().minus(x.cdr().car())
-    if f == TIMES:
+    if f in TIMES:
         check_args(f, x, 2)
         return x.car().times(x.cdr().car())
-    if f == QUOTIENT:
+    if f in QUOTIENT:
         check_args(f, x, 2)
         return x.car().quotient(x.cdr().car())
-    if f == REMAINDER:
+    if f in REMAINDER:
         check_args(f, x, 2)
         return x.car().remainder(x.cdr().car())
-    if f == LESS:
+    if f in LESS:
         check_args(f, x, 2)
         return x.car().less(x.cdr().car())
-    if f == GREATER:
+    if f in GREATER:
         check_args(f, x, 2)
         return x.car().greater(x.cdr().car())
-    if f == HELP:
+    if f in HELP:
         check_args(f, x, 0)
         print help_string
-        return T
-    if f == QUIT:
+        return SExp("T")
+    if f in QUIT:
         check_args(f, x, 0)
         exit()
     if not in_pairlist(f, dList): raise LispException("function {0} not found".format(f))
@@ -438,7 +439,7 @@ def interpreter(dList):
                 tokens += get_tokens(entry)
             sexp = parse(tokens)
             if len(tokens) > 0: raise LispException("extra tokens found: {0}".format(tokens))
-            print bcolors.OKBLUE + " OUT: " + bcolors.ENDC + str(myeval(sexp, NIL, dList))
+            print bcolors.OKBLUE + " OUT: " + bcolors.ENDC + str(myeval(sexp, SExp("NIL"), dList))
             print ""
         except KeyboardInterrupt:
             print ""
@@ -450,7 +451,7 @@ def interpreter(dList):
 
 
 if __name__ == "__main__":
-    dList = copy.copy(NIL)
+    dList = copy.copy(SExp("NIL"))
 
     if len(sys.argv) == 1:
         try:
@@ -462,7 +463,7 @@ if __name__ == "__main__":
         tokens = get_tokens(infile.read())
         for sexp in parse_gen(tokens):
             try:
-                print str(myeval(sexp, NIL, dList))
+                print str(myeval(sexp, SExp("NIL"), dList))
             except LispException as inst:
                 print "error: " + inst.args[0]
         infile.close()
