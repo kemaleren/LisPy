@@ -38,7 +38,7 @@ class SExp(object):
                 raise LispException("trying to create an S-expression from {0}".format(str(left)))
             if ATOM_regex.match(left) is None:
                 raise LispException("not a valid atomic S-expression: {0}".format(left))
-            self.val = left
+            self.val = left.upper()
         else:
             if not isinstance(left, SExp) or not isinstance(right, SExp):
                 raise LispException("not an S-expression")
@@ -54,7 +54,7 @@ class SExp(object):
     def __eq__(self, other):
         if not self.atom(): raise LispException("not an atomic S-expression: {0}".format(self))
         if not other.atom(): raise LispException("not an atomic S-expression: {0}".format(other))
-        return self.val.upper() == other.val.upper()
+        return self.val == other.val
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -68,7 +68,7 @@ class SExp(object):
     def null(self, sexp=False):
         result = False
         if self.atom():
-            if self.val.upper() == "NIL": result = True
+            if self.val == "NIL": result = True
         if sexp: return SExp(self.bool_sexps[result])
         return result
 
