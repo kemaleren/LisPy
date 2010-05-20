@@ -424,11 +424,18 @@ class bcolors:
 
 
 def interpreter(dList):
-    print "Welcome to LISP"
+    print ""
+    print bcolors.OKBLUE + "Welcome to LISP" + bcolors.ENDC
     print "Call (help) to see available primitives"
     print "Type 'Control+c' to cancel the current input"
     print "Call (quit) or type 'Control-d' to quit"
     print ""
+    try:
+        import readline
+    except:
+        print bcolors.WARNING + "warning: " + bcolors.ENDC + "loading readline library failed. Advanced editing features will not be available"
+        print ""
+
     while True:
         try:
             entry = raw_input(bcolors.PROMPT + "LISP: " + bcolors.ENDC)
@@ -437,8 +444,11 @@ def interpreter(dList):
             while not balanced(tokens):
                 entry = raw_input("")
                 tokens += get_tokens(entry)
-            sexp = parse(tokens)
+
+            #read. parse(tokens) #parse the tokens and build an S-Expression
             if len(tokens) > 0: raise LispException("extra tokens found: {0}".format(tokens))
+
+            #eval and print. the heart of the interpreter!
             print bcolors.OKBLUE + " OUT: " + bcolors.ENDC + str(myeval(sexp, SExp("NIL"), dList))
             print ""
         except KeyboardInterrupt:
@@ -471,6 +481,6 @@ if __name__ == "__main__":
         print "Usage: interpreter.py [input file]"
         print ""
         print "Note that [input file] is optional. If provided, all LISP expressions in the file"
-        print "will be executed in order. Otherwise, the interpreter starts."""
+        print "will be read, eval'd and printed in order. Otherwise, the interpreter starts."""
         print ""
         print ""

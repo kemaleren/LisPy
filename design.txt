@@ -39,10 +39,10 @@ once the parentheses match, or once they clearly cannot match.
 
 TODO:
 ----
+-Consolidate atom checking
+-make what can be an atom more restrictive
 -Implement QUOTE as single quote: '
--Implement the interactive toplevel using curses to allow more robust editing techniques.
- (multiline navigation, reverse incremental search, in-place editing, dumping history
- to file, etc.)
+-Allow dumping to file
 -Don't rely on Python for recursion: it only supports up to 1000 recursive calls, and
  has no support for tail recursion. Instead, use my own stack and implement tail
  recursion.
