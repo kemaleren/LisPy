@@ -110,11 +110,17 @@ class SExp(object):
     def less(self, other):
         return self._compare(other, lambda a,b: a<b)
 
-    def _is_list(self):
+    def is_list(self):
         if self._null(): return True
         if self._atom(): return False
-        if self.val[1]._is_list(): return True
+        if self.val[1].is_list(): return True
         return False
+
+    def length(self):
+        if not self.is_list():
+            raise LispException("calling length on non-list {0}".format(self))
+        if self._null(): return 0
+        return 1+self.val[1].length()
 
     def _repr_helper(self):
         if self._null():
@@ -125,7 +131,7 @@ class SExp(object):
         if self._atom():
             return self.val
         else:
-            if self._is_list():
+            if self.is_list():
                 return "({0}{1})".format(self.val[0], self.val[1]._repr_helper())
             return "({0} . {1})".format(self.val[0], self.val[1])
 
@@ -256,6 +262,12 @@ def addpairs(params, cur_args, to_list):
     return addpairs(params.cdr(), cur_args.cdr(), SExp(pair, to_list))
 
 
+def check_args(f, sexp, exp_len):
+    real_len = sexp.length()
+    if not real_len == exp_len:
+        raise LispException("{0} expects {1} argument; got {2}".format(f, exp_len, real_len))
+    
+
 def myeval(exp, aList, dList):
     if exp._atom():
         if exp._int(): return exp
@@ -265,12 +277,15 @@ def myeval(exp, aList, dList):
         raise LispException("unbound variable: {0}".format(exp))
     if exp.car()._atom():
         #cdar because cdr only would give (quote 5) evaluating to (5), not 5. only takes one argument.
-        if exp.car()._eq(QUOTE): return exp.cdr().car() 
+        if exp.car()._eq(QUOTE):
+            check_args(exp.car(), exp.cdr(), 1)
+            return exp.cdr().car() 
         if exp.car()._eq(COND): return evcond(exp.cdr(), aList, dList)
         if exp.car()._eq(DEFUN):
             f = exp.cdr().car()
             args = exp.cdr().cdr().car()
             body = exp.cdr().cdr().cdr().car()
+            check_args(f, exp.cdr(), 3)
             return defun(f, args, body, dList)
         return my_apply(exp.car(), evlis(exp.cdr(), aList, dList), aList, dList)
     raise LispException("eval called with invalid expression")
@@ -281,6 +296,7 @@ def evlis(targetlist, aList, dList):
     return SExp(myeval(targetlist.car(), aList, dList),
                 evlis(targetlist.cdr(), aList, dList))
 
+
 def my_apply(f, x, aList, dList):
     """
     f: a special form, primitive function, or a function in the dlist.
@@ -290,26 +306,57 @@ def my_apply(f, x, aList, dList):
 
     """
     if not f._atom(): raise LispException("error: cannot call non-atom {0} as a function".format(f))
-    if f._eq(CAR): return x.car().car() #caar, because only have one argument: a list
-    if f._eq(CDR): return x.car().cdr() #cadr
-    if f._eq(CONS): return SExp(x.car(), x.cdr()) #two arguments
-    if f._eq(ATOM): return x.car.atom()
-    if f._eq(NULL): return x.null()
-    if f._eq(EQ): return x.car().eq(x.cdr().car())
+    if f._eq(CAR):
+        check_args(f, x, 1)
+        return x.car().car() #caar, because only have one argument: a list
+    if f._eq(CDR):
+        check_args(f, x, 1)
+        return x.car().cdr() #cadr
+    if f._eq(CONS):
+        check_args(f, x, 2)
+        return SExp(x.car(), x.cdr()) #two arguments
+    if f._eq(ATOM):
+        check_args(f, x, 1)
+        return x.car.atom()
+    if f._eq(NULL):
+        check_args(f, x, 1)
+        return x.null()
+    if f._eq(EQ):
+        check_args(f, x, 2)
+        return x.car().eq(x.cdr().car())
 
-    if f._eq(INT): return x.car().int()
-    if f._eq(PLUS): return x.car().plus(x.cdr().car())
-    if f._eq(MINUS): return x.car().minus(x.cdr().car())
-    if f._eq(TIMES): return x.car().times(x.cdr().car())
-    if f._eq(QUOTIENT): return x.car().quotient(x.cdr().car())
-    if f._eq(REMAINDER): return x.car().remainder(x.cdr().car())
-    if f._eq(LESS): return x.car().less(x.cdr().car())
-    if f._eq(GREATER): return x.car().greater(x.cdr().car())
+    if f._eq(INT):
+        check_args(f, x, 1)
+        return x.car().int()
+    if f._eq(PLUS):
+        check_args(f, x, 2)
+        return x.car().plus(x.cdr().car())
+    if f._eq(MINUS):
+        check_args(f, x, 2)
+        return x.car().minus(x.cdr().car())
+    if f._eq(TIMES):
+        check_args(f, x, 2)
+        return x.car().times(x.cdr().car())
+    if f._eq(QUOTIENT):
+        check_args(f, x, 2)
+        return x.car().quotient(x.cdr().car())
+    if f._eq(REMAINDER):
+        check_args(f, x, 2)
+        return x.car().remainder(x.cdr().car())
+    if f._eq(LESS):
+        check_args(f, x, 2)
+        return x.car().less(x.cdr().car())
+    if f._eq(GREATER):
+        check_args(f, x, 2)
+        return x.car().greater(x.cdr().car())
 
-    if f._eq(QUIT): exit()
-
+    if f._eq(QUIT):
+        check_args(f, x, 0)
+        exit()
     if not in_pairlist(f, dList): raise LispException("function {0} not found".format(f))
-    return myeval(getval(f,dList).cdr(), addpairs(getval(f, dList).car(), x, aList), dList)
+    params = getval(f, dList).car()
+    check_args(f, params, x.length())
+    return myeval(getval(f,dList).cdr(), addpairs(params, x, aList), dList)
 
 
 def defun(f, args, body, dList):
