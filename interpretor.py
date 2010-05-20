@@ -264,7 +264,8 @@ def myeval(exp, aList, dList):
         if in_pairlist(exp, aList): return getval(exp, aList)
         raise LispException("unbound variable: {0}".format(exp))
     if exp.car()._atom():
-        if exp.car()._eq(QUOTE): return exp.cdr().car()
+        #cdar because cdr only would give (quote 5) evaluating to (5), not 5. only takes one argument.
+        if exp.car()._eq(QUOTE): return exp.cdr().car() 
         if exp.car()._eq(COND): return evcond(exp.cdr(), aList, dList)
         if exp.car()._eq(DEFUN):
             f = exp.cdr().car()
@@ -281,10 +282,17 @@ def evlis(targetlist, aList, dList):
                 evlis(targetlist.cdr(), aList, dList))
 
 def my_apply(f, x, aList, dList):
+    """
+    f: a special form, primitive function, or a function in the dlist.
+    x: a list of function arguments.
+    aList: a list of (variable . binding) pairs.
+    dList: a list of (fname . (arglist . body)) pairs.
+
+    """
     if not f._atom(): raise LispException("error: cannot call non-atom {0} as a function".format(f))
-    if f._eq(CAR): return x.car().car()
-    if f._eq(CDR): return x.car().cdr()
-    if f._eq(CONS): return SExp(x.car(), x.cdr())
+    if f._eq(CAR): return x.car().car() #caar, because only have one argument: a list
+    if f._eq(CDR): return x.car().cdr() #cadr
+    if f._eq(CONS): return SExp(x.car(), x.cdr()) #two arguments
     if f._eq(ATOM): return x.car.atom()
     if f._eq(NULL): return x.null()
     if f._eq(EQ): return x.car().eq(x.cdr().car())
