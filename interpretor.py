@@ -272,7 +272,8 @@ def my_apply(f, x, aList, dList):
     if f.val == "GREATER": return x.car().greater(x.cdr().car())
 
     if f.val == "QUIT": exit()
-    
+
+    if not in_pairlist(f, dList): raise Exception("function {0} not found".format(f))
     return myeval(getval(f,dList).cdr(), addpairs(getval(f, dList).car(), x, aList), dList)
 
 
