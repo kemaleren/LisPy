@@ -14,6 +14,7 @@ import copy
 
 #some useful regexes:
 ATOM_regex = re.compile("^\w+$|^-[0-9]+$")
+NON_INT_ATOM_regex = re.compile("^[a-zA-Z]+\w+$")
 INT_regex = re.compile("^-?[0-9]+$")
 WHITESPACE_regex = re.compile("^\s+$")
 
@@ -128,6 +129,11 @@ class SExp(object):
             raise LispException("calling length on non-list {0}".format(self))
         if self._null(): return 0
         return 1+self.val[1].length()
+
+    def non_int_atom(self):
+        if not self._atom(): return False
+        if NON_INT_ATOM_regex.match(self.val) is None: return False
+        return True
 
     def _repr_helper(self):
         if self._null():
@@ -289,6 +295,7 @@ def myeval(exp, aList, dList):
         if in_pairlist(exp, aList): return getval(exp, aList)
         raise LispException("unbound variable: {0}".format(exp))
     if exp.car()._atom():
+        if not exp.car().non_int_atom: raise LispException("'{0}' is not a valid function name or special form".format(exp.car()))
         #cdar because cdr only would give (quote 5) evaluating to (5), not 5. only takes one argument.
         if exp.car()._eq(QUOTE):
             check_args(exp.car(), exp.cdr(), 1)
@@ -296,6 +303,7 @@ def myeval(exp, aList, dList):
         if exp.car()._eq(COND): return evcond(exp.cdr(), aList, dList)
         if exp.car()._eq(DEFUN):
             f = exp.cdr().car()
+            if not f.non_int_atom(): raise LispException("'{0}' is not a valid function name".format(f))
             args = exp.cdr().cdr().car()
             body = exp.cdr().cdr().cdr().car()
             check_args(f, exp.cdr(), 3)
