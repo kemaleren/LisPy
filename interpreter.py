@@ -60,7 +60,7 @@ class SExp(object):
 
     def _null(self):
         if self._atom():
-            if self.val == "NIL": return True
+            if self.val.upper() == "NIL": return True
         return False
 
     def null(self):
@@ -106,7 +106,7 @@ class SExp(object):
         return self._arithmetic(other, lambda a,b: a%b)
 
     def _compare(self, other, op):
-        if not self._int(): raise LispException("not an int: {0}".forat(self))
+        if not self._int(): raise LispException("not an int: {0}".format(self))
         if not other._int(): raise LispException("not an int: {0}".format(other))
         if op(int(self.val), int(other.val)): return T
         return NIL
@@ -330,7 +330,7 @@ def my_apply(f, x, aList, dList):
         return SExp(x.car(), x.cdr()) #two arguments
     if f._eq(ATOM):
         check_args(f, x, 1)
-        return x.car.atom()
+        return x.car().atom()
     if f._eq(NULL):
         check_args(f, x, 1)
         return x.car().null()
