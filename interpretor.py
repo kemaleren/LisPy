@@ -149,6 +149,18 @@ def lex(myinput):
     if not my_atom == "":
         yield my_atom
 
+def get_tokens(myinput):
+    return [i for i in lex(myinput)]
+
+
+def balanced(tokens):
+    count = 0
+    for token in tokens:
+        if token == "(": count += 1
+        if token == ")": count -= 1
+        if count < 0: raise Exception("imbalanced parens")
+    return count == 0
+
 
 def process_list_tokens(tokens):
     """Parses tokens in list form into an s-expression"""
@@ -187,9 +199,8 @@ def process_tokens(tokens):
     return SExp(first, second)
         
         
-def parse(myinput):
-    """Parses in input and returns it as an s-expression"""
-    tokens = [i for i in lex(myinput)]
+def parse(tokens):
+    """Parses tokens and returns an s-expression"""
     sexp = process_tokens(tokens)
     if len(tokens) > 0: raise Exception("extra tokens found: {0}".format(", ".join(tokens)))
     return sexp
@@ -273,19 +284,39 @@ def evcond(be, aList, dList):
         return myeval(be.car().cdr().car(), aList, dList)
     return evcond(be.cdr(), aList, dList)
 
+class bcolors:
+    PROMPT = '\033[92m'
+    OKBLUE = '\033[94m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+
+    def disable(self):
+        self.HEADER = ''
+        self.OKBLUE = ''
+        self.OKGREEN = ''
+        self.WARNING = ''
+        self.FAIL = ''
+        self.ENDC = ''
+
 
 def interpreter(dList):
     while True:
-        expression = raw_input("LISP>")
+        entry = raw_input(bcolors.PROMPT + "LISP: " + bcolors.ENDC)
+        tokens = get_tokens(entry)
         try:
-            print myeval(parse(expression), NIL_sexp, dList)
+            while not balanced(tokens):
+                entry = raw_input("")
+                tokens += get_tokens(entry)
+            print bcolors.OKBLUE + " OUT: " + bcolors.ENDC + str(myeval(parse(tokens), NIL_sexp, dList))
+            print ""
         except Exception as inst:
-            print "error: " + inst.args[0]
+            print bcolors.FAIL + " ERR: " + bcolors.ENDC + inst.args[0]
+            print ""
             
 
 if __name__ == "__main__":
     dList = copy.copy(NIL_sexp)
     if len(sys.argv) == 1: interpreter(dList)
     else:
-        print "error - command-line options not yet supported."
-
+        print "error - command-line options not yet implemented"
