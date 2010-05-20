@@ -302,13 +302,16 @@ class bcolors:
 
 def interpreter(dList):
     while True:
-        entry = raw_input(bcolors.PROMPT + "LISP: " + bcolors.ENDC)
-        tokens = get_tokens(entry)
         try:
+            entry = raw_input(bcolors.PROMPT + "LISP: " + bcolors.ENDC)
+            tokens = get_tokens(entry)
+
             while not balanced(tokens):
                 entry = raw_input("")
                 tokens += get_tokens(entry)
             print bcolors.OKBLUE + " OUT: " + bcolors.ENDC + str(myeval(parse(tokens), NIL_sexp, dList))
+            print ""
+        except KeyboardInterrupt:
             print ""
         except Exception as inst:
             print bcolors.FAIL + " ERR: " + bcolors.ENDC + inst.args[0]
