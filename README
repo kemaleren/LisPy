@@ -1,0 +1,28 @@
+*ABOUT*
+ -----
+This is a minimal implementation of most of the features of LISP 1.5.
+The LISP interpreter supports both interactive and batch modes.
+
+Note: atoms in this implementation are case-insensitive.
+
+ -----
+*USAGE*
+ -----
+
+*Interactive mode: Simply run './interpreter.py' to start an interactive
+ ----------------  toplevel. LISP commands may be entered over multiple lines;
+                   a command will not be evaluated until the parentheses
+		   match.
+
+                   Pressing "Control+c" abandons the current expression
+		   and starts a new line. Calling (help) gives some minimal
+		   help.
+
+		   When finished, type (quit) or press "Control+d" to exit.
+
+
+*Batch mode:       Run './interpreter.py <input file>'. All expressions in the
+ ----------	   will be read, evaluated, and printed in order to standard
+		   output.
+         
+

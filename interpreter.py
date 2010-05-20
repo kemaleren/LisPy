@@ -1,5 +1,13 @@
 #! /usr/bin/env python
 
+"""
+interpreter.py
+Author: Kemal Eren
+
+A minimal implementation of a LISP interpreter.
+
+"""
+
 import re
 import sys
 import copy
@@ -17,6 +25,7 @@ NULL_VALUE = "NIL"
 class LispException(Exception):
     pass
 
+help_string = "Available primitives:\nT, NIL,\nCAR, CDR, CONS, ATOM, EQ, NULL, INT,\nPLUS, MINUS, TIMES, QUOTIENT, REMAINDER, LESS, GREATER\nCOND, QUOTE, DEFUN.\n\nFurther help not currently available."
 
 class SExp(object):
     def __init__(self, left, right=None):
@@ -156,6 +165,7 @@ REMAINDER = SExp("REMAINDER")
 LESS = SExp("LESS")
 GREATER = SExp("GREATER")
 QUIT = SExp("QUIT")
+HELP = SExp("HELP")
 QUOTE = SExp("QUOTE")
 COND = SExp("COND")
 DEFUN = SExp("DEFUN")
@@ -349,7 +359,10 @@ def my_apply(f, x, aList, dList):
     if f._eq(GREATER):
         check_args(f, x, 2)
         return x.car().greater(x.cdr().car())
-
+    if f._eq(HELP):
+        check_args(f, x, 0)
+        print help_string
+        return T
     if f._eq(QUIT):
         check_args(f, x, 0)
         exit()
@@ -389,6 +402,7 @@ class bcolors:
 
 def interpreter(dList):
     print "Welcome to LISP"
+    print "Call (help) to see available primitives"
     print "Type 'Control+c' to cancel the current input"
     print "Call (quit) or type 'Control-d' to quit"
     print ""

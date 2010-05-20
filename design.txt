@@ -1,0 +1,38 @@
+Since this LISP interpreter is implemented in Python, there is so no need for a Makefile.
+
+Parsing:
+-------
+A simple lexer splits the input into tokens. Regular expressions for identifying valid
+atoms, integers, and whitespace make tokenizing very easy. Then two input functions
+(essentially input and input2, as described by Neelam on the cse.courses.cse755 newsgroup)
+recursively parse the list of tokens, in one pass, building an S-Expression.
+
+The two input functions recursively call each other to allow both dot and list notation
+(but not mixed notation).
+
+
+S-Expression implementation:
+---------------------------
+Concetually, S-Expressions are represented using two of Python's basic data structures:
+lists and strings. A simple S-expression is basically a list with one string; complex
+S-expressions are binary trees with strings at their leaves.
+
+The implementation uses a class that provides all the primitive functions (such as car,
+cdr, cons) and some utility functions.
+
+
+LISP interpreter
+----------------
+The main interpreter functions are translated from LISP to Python almost identically.
+They do include some extra calls to utilities for error checking, such as verifying that
+functions and special forms are called with the correct number of arguments.
+
+
+Interactive toplevel
+--------------------
+For ease of use, some color is added to the input and output by using extended ASCII
+characters.
+
+
+
+
