@@ -12,6 +12,10 @@ NULL_VALUE = "NIL"
 #write eval, apply, defun, cond, quote
 
 #experiment with my own tail-recursion stack, to avoid recursion depth of python
+
+class LispException(Exception):
+    pass
+
     
 class SExp(object):
     def __init__(self, left, right=None):
@@ -21,13 +25,13 @@ class SExp(object):
         """
         if right is None:
             if not isinstance(left, str):
-                raise Exception("trying to create an S-expression from {0}".format(str(left)))
+                raise LispException("trying to create an S-expression from {0}".format(str(left)))
             if ATOM.match(left) is None:
-                raise Exception("not a valid atomic S-expression: {0}".format(left))
+                raise LispException("not a valid atomic S-expression: {0}".format(left))
             self.val = left
         else:
             if not isinstance(left, SExp) or not isinstance(right, SExp):
-                raise Exception("not an S-expression")
+                raise LispException("not an S-expression")
             self.val = (left, right)
 
     def _atom(self):
@@ -39,8 +43,8 @@ class SExp(object):
         return NIL_sexp
 
     def _eq(self, other):
-        if not self._atom(): raise Exception("not an atomic S-expression: {0}".format(self))
-        if not other._atom(): raise Exception("not an atomic S-expression: {0}".format(other))
+        if not self._atom(): raise LispException("not an atomic S-expression: {0}".format(self))
+        if not other._atom(): raise LispException("not an atomic S-expression: {0}".format(other))
         return self.val == other.val
 
     def eq(self, other):
@@ -65,16 +69,16 @@ class SExp(object):
         return NIL_sexp
 
     def car(self):
-        if self._atom(): raise Exception("cannot call CAR on atomic s-expression: {0}".format(self))
+        if self._atom(): raise LispException("cannot call CAR on atomic s-expression: {0}".format(self))
         return self.val[0]
 
     def cdr(self):
-        if self._atom(): raise Exception("cannot call CDR on atomic s-expression: {0}".format(self))
+        if self._atom(): raise LispException("cannot call CDR on atomic s-expression: {0}".format(self))
         return self.val[1]
 
     def _arithmetic(self, other, op):
-        if not self._int(): raise Exception("not an int: {0}".format(self))
-        if not other._int(): raise Exception("not an int: {0}".format(other))
+        if not self._int(): raise LispException("not an int: {0}".format(self))
+        if not other._int(): raise LispException("not an int: {0}".format(other))
         return SExp(str(op(int(self.val),
                            int(other.val))))
 
@@ -94,8 +98,8 @@ class SExp(object):
         return self._arithmetic(other, lambda a,b: a%b)
 
     def _compare(self, other, op):
-        if not self._int(): raise Exception("not an int: {0}".forat(self))
-        if not other._int(): raise Exception("not an int: {0}".format(other))
+        if not self._int(): raise LispException("not an int: {0}".forat(self))
+        if not other._int(): raise LispException("not an int: {0}".format(other))
         if op(int(self.val), int(other.val)): return T_sexp
         return NIL_sexp
         
@@ -145,7 +149,7 @@ def lex(myinput):
         elif ATOM.match(char) or (char == "-" and my_atom == ""): #FIXME: a horrible hack for negative numbers!!!
             my_atom += char
         else:
-            raise Exception("bad token: {0}".format(char))
+            raise LispException("bad token: {0}".format(char))
     if not my_atom == "":
         yield my_atom
 
@@ -158,26 +162,26 @@ def balanced(tokens):
     for token in tokens:
         if token == "(": count += 1
         if token == ")": count -= 1
-        if count < 0: raise Exception("imbalanced parens")
+        if count < 0: raise LispException("imbalanced parens")
     return count == 0
 
 
 def process_list_tokens(tokens):
     """Parses tokens in list form into an s-expression"""
-    if len(tokens) == 0: raise Exception("parse error: missing tokens")
+    if len(tokens) == 0: raise LispException("parse error: missing tokens")
     if tokens[0] == ")":
         tokens.pop(0)
         return NIL_sexp
     first = process_tokens(tokens)
-    if len(tokens) == 0: raise Exception("parse error: missing tokens")
-    if tokens[0] == ".": raise Exception("mixed notation not supported")
+    if len(tokens) == 0: raise LispException("parse error: missing tokens")
+    if tokens[0] == ".": raise LispException("mixed notation not supported")
     second = process_list_tokens(tokens)
     return SExp(first, second)
 
 
 def process_tokens(tokens):
     """Parses tokens into an s-expression"""
-    if len(tokens) == 0: raise Exception("parse error: missing tokens")
+    if len(tokens) == 0: raise LispException("parse error: missing tokens")
     if ATOM.match(tokens[0]):
         return SExp(tokens.pop(0))
     if tokens[0] == "(" and tokens[1] == ")":
@@ -185,15 +189,15 @@ def process_tokens(tokens):
         tokens.pop(0)
         return NIL_sexp
     #recursively continue
-    if not tokens.pop(0) == "(": raise Exception("missing open parentheses")
+    if not tokens.pop(0) == "(": raise LispException("missing open parentheses")
     first = process_tokens(tokens)
-    if len(tokens) == 0: raise Exception("parse error: missing tokens")
+    if len(tokens) == 0: raise LispException("parse error: missing tokens")
     second = []
     if tokens[0] == ".":
         tokens.pop(0)
         second = process_tokens(tokens)
-        if len(tokens) == 0: raise Exception("parse error: missing tokens")
-        if not tokens.pop(0) == ")": raise Exception("missing close parentheses")
+        if len(tokens) == 0: raise LispException("parse error: missing tokens")
+        if not tokens.pop(0) == ")": raise LispException("missing close parentheses")
     else:
         second = process_list_tokens(tokens)
     return SExp(first, second)
@@ -202,27 +206,27 @@ def process_tokens(tokens):
 def parse(tokens):
     """Parses tokens and returns an s-expression"""
     sexp = process_tokens(tokens)
-    if len(tokens) > 0: raise Exception("extra tokens found: {0}".format(", ".join(tokens)))
+    if len(tokens) > 0: raise LispException("extra tokens found: {0}".format(", ".join(tokens)))
     return sexp
 
 
 def in_pairlist(exp, pairlist):
     if pairlist._null(): return False
-    if pairlist.car()._atom(): raise Exception("a-list or d-list in wrong format")
+    if pairlist.car()._atom(): raise LispException("a-list or d-list in wrong format")
     if exp._eq(pairlist.car().car()): return True
     return in_pairlist(exp, pairlist.cdr())
     
 
 def getval(exp, from_list):
     if from_list._null(): return NIL_sexp
-    if from_list.car()._atom(): raise Exception("a-list or d-list in wrong format")
+    if from_list.car()._atom(): raise LispException("a-list or d-list in wrong format")
     if exp._eq(from_list.car().car()): return from_list.car().cdr()
     return getval(exp, from_list.cdr())
 
 
 def addpairs(params, cur_args, to_list):
     if params._null() and cur_args._null(): return to_list
-    if params._atom() or cur_args._atom(): raise Exception("pairs cannot be atoms")
+    if params._atom() or cur_args._atom(): raise LispException("pairs cannot be atoms")
     pair = SExp(params.car(), cur_args.car())
     return addpairs(params.cdr(), cur_args.cdr(), SExp(pair, to_list))
 
@@ -233,7 +237,7 @@ def myeval(exp, aList, dList):
         if exp._eq(T_sexp): return T_sexp
         if exp._null(): return NIL_sexp
         if in_pairlist(exp, aList): return getval(exp, aList)
-        raise Exception("unbound variable: {0}".format(exp.val))
+        raise LispException("unbound variable: {0}".format(exp.val))
     if exp.car()._atom():
         if exp.car().val == "QUOTE": return exp.cdr().car()
         if exp.car().val == "COND": return evcond(exp.cdr(), aList, dList)
@@ -243,7 +247,7 @@ def myeval(exp, aList, dList):
             body = exp.cdr().cdr().cdr().car()
             return defun(f, args, body, dList)
         return my_apply(exp.car(), evlis(exp.cdr(), aList, dList), aList, dList)
-    raise Exception("eval called with invalid expression")
+    raise LispException("eval called with invalid expression")
         
     
 def evlis(targetlist, aList, dList):
@@ -253,7 +257,7 @@ def evlis(targetlist, aList, dList):
 
 def my_apply(f, x, aList, dList):
     
-    if not f._atom(): raise Exception("error: cannot call non-atom {0} as a function".format(f))
+    if not f._atom(): raise LispException("error: cannot call non-atom {0} as a function".format(f))
     f.val = f.val.upper()
     if f.val == "CAR": return x.car().car()
     if f.val == "CDR": return x.car().cdr()
@@ -273,7 +277,7 @@ def my_apply(f, x, aList, dList):
 
     if f.val == "QUIT": exit()
 
-    if not in_pairlist(f, dList): raise Exception("function {0} not found".format(f))
+    if not in_pairlist(f, dList): raise LispException("function {0} not found".format(f))
     return myeval(getval(f,dList).cdr(), addpairs(getval(f, dList).car(), x, aList), dList)
 
 
@@ -284,7 +288,7 @@ def defun(f, args, body, dList):
     
 
 def evcond(be, aList, dList):
-    if be._null(): raise Exception("boolean expression cannot be NIL")
+    if be._null(): raise LispException("boolean expression cannot be NIL")
     if not (myeval(be.car().car(), aList, dList))._null():
         return myeval(be.car().cdr().car(), aList, dList)
     return evcond(be.cdr(), aList, dList)
@@ -320,13 +324,17 @@ def interpreter(dList):
             print ""
             print "keyboard interrupt"
             print ""
-        except Exception as inst:
+        except LispException as inst:
             print bcolors.FAIL + " ERR: " + bcolors.ENDC + inst.args[0]
             print ""
             
 
 if __name__ == "__main__":
     dList = copy.copy(NIL_sexp)
-    if len(sys.argv) == 1: interpreter(dList)
+    try:
+        if len(sys.argv) == 1: interpreter(dList)
+    except EOFError:
+        print ""
+        
     else:
         print "error - command-line options not yet implemented"
