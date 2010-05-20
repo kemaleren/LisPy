@@ -22,7 +22,7 @@ Note: atoms in this implementation are case-insensitive.
 
 
 *Batch mode:       Run './interpreter.py <input file>'. All expressions in the
- ----------	   will be read, evaluated, and printed in order to standard
-		   output.
+ ----------	   file will be read, evaluated, and printed in order to
+                   standard output.
          
 
