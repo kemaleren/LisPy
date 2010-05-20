@@ -388,6 +388,10 @@ class bcolors:
 
 
 def interpreter(dList):
+    print "Welcome to LISP"
+    print "Type 'Control+c' to cancel the current input"
+    print "Call (quit) or type 'Control-d' to quit"
+    print ""
     while True:
         try:
             entry = raw_input(bcolors.PROMPT + "LISP: " + bcolors.ENDC)
@@ -426,4 +430,11 @@ if __name__ == "__main__":
             except LispException as inst:
                 print "error: " + inst.args[0]
         infile.close()
+    else:
+        print "Usage: interpreter.py [input file]"
+        print ""
+        print "Note that [input file] is optional. If provided, all LISP expressions in the file"
+        print "will be executed in order. Otherwise, the interpreter starts."""
+        print ""
+        print ""
 
