@@ -23,7 +23,10 @@ WHITESPACE_regex = re.compile("^\s+$")
 class LispException(Exception):
     pass
 
-help_string = "Available primitives:\nT, NIL,\nCAR, CDR, CONS, ATOM, EQ, NULL, INT,\nPLUS, MINUS, TIMES, QUOTIENT, REMAINDER, LESS, GREATER\nCOND, QUOTE, DEFUN.\n\nFurther help not currently available."
+primitives_string = "T NIL CAR CDR CONS ATOM EQ NULL INT PLUS MINUS TIMES QUOTIENT REMAINDER LESS GREATER COND QUOTE DEFUN"
+primitives = [i for i in primitives_string.split()]
+
+help_string = "Available primitives:\n{0}\n\nFurther help not currently available.".format(primitives_string)
 
 class SExp(object):
     def __init__(self, left, right=None):
@@ -50,13 +53,16 @@ class SExp(object):
         if self._atom(): return T
         return NIL
 
-    def _eq(self, other):
+    def __eq__(self, other):
         if not self._atom(): raise LispException("not an atomic S-expression: {0}".format(self))
         if not other._atom(): raise LispException("not an atomic S-expression: {0}".format(other))
         return self.val.upper() == other.val.upper()
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def eq(self, other):
-        if self._eq(other): return T
+        if self.__eq__(other): return T
         return NIL
 
     def _null(self):
@@ -152,6 +158,7 @@ class SExp(object):
         self.val = other.val
 
 #basic S-expressions
+#TODO: do this using the 'primitives' string above!!! Also integrate into a help system.
 T = SExp("T")
 NIL = SExp("NIL")
 
@@ -263,14 +270,14 @@ def parse_gen(tokens):
 def in_pairlist(exp, pairlist):
     if pairlist._null(): return False
     if pairlist.car()._atom(): raise LispException("a-list or d-list in wrong format")
-    if exp._eq(pairlist.car().car()): return True
+    if exp == pairlist.car().car(): return True
     return in_pairlist(exp, pairlist.cdr())
 
 
 def getval(exp, from_list):
     if from_list._null(): return NIL
     if from_list.car()._atom(): raise LispException("a-list or d-list in wrong format")
-    if exp._eq(from_list.car().car()): return from_list.car().cdr()
+    if exp == from_list.car().car(): return from_list.car().cdr()
     return getval(exp, from_list.cdr())
 
 
@@ -290,20 +297,21 @@ def check_args(f, sexp, exp_len):
 def myeval(exp, aList, dList):
     if exp._atom():
         if exp._int(): return exp
-        if exp._eq(T): return T
+        if exp == T: return T
         if exp._null(): return NIL
         if in_pairlist(exp, aList): return getval(exp, aList)
         raise LispException("unbound variable: {0}".format(exp))
     if exp.car()._atom():
         if not exp.car().non_int_atom: raise LispException("'{0}' is not a valid function name or special form".format(exp.car()))
         #cdar because cdr only would give (quote 5) evaluating to (5), not 5. only takes one argument.
-        if exp.car()._eq(QUOTE):
+        if exp.car() == QUOTE:
             check_args(exp.car(), exp.cdr(), 1)
             return exp.cdr().car() 
-        if exp.car()._eq(COND): return evcond(exp.cdr(), aList, dList)
-        if exp.car()._eq(DEFUN):
+        if exp.car() == COND: return evcond(exp.cdr(), aList, dList)
+        if exp.car() == DEFUN:
             f = exp.cdr().car()
             if not f.non_int_atom(): raise LispException("'{0}' is not a valid function name".format(f))
+            #TODO: check whether trying to redefine a primitive
             args = exp.cdr().cdr().car()
             body = exp.cdr().cdr().cdr().car()
             check_args(f, exp.cdr(), 3)
@@ -327,54 +335,55 @@ def my_apply(f, x, aList, dList):
 
     """
     if not f._atom(): raise LispException("error: cannot call non-atom {0} as a function".format(f))
-    if f._eq(CAR):
+    #TODO: integrate the check_args call with the other primitives definitions + help.
+    if f == CAR:
         check_args(f, x, 1)
         return x.car().car() #caar, because only have one argument: a list
-    if f._eq(CDR):
+    if f == CDR:
         check_args(f, x, 1)
         return x.car().cdr() #cadr
-    if f._eq(CONS):
+    if f == CONS:
         check_args(f, x, 2)
         return SExp(x.car(), x.cdr()) #two arguments
-    if f._eq(ATOM):
+    if f == ATOM:
         check_args(f, x, 1)
         return x.car().atom()
-    if f._eq(NULL):
+    if f == NULL:
         check_args(f, x, 1)
         return x.car().null()
-    if f._eq(EQ):
+    if f == EQ:
         check_args(f, x, 2)
         return x.car().eq(x.cdr().car())
 
-    if f._eq(INT):
+    if f == INT:
         check_args(f, x, 1)
         return x.car().int()
-    if f._eq(PLUS):
+    if f == PLUS:
         check_args(f, x, 2)
         return x.car().plus(x.cdr().car())
-    if f._eq(MINUS):
+    if f == MINUS:
         check_args(f, x, 2)
         return x.car().minus(x.cdr().car())
-    if f._eq(TIMES):
+    if f == TIMES:
         check_args(f, x, 2)
         return x.car().times(x.cdr().car())
-    if f._eq(QUOTIENT):
+    if f == QUOTIENT:
         check_args(f, x, 2)
         return x.car().quotient(x.cdr().car())
-    if f._eq(REMAINDER):
+    if f == REMAINDER:
         check_args(f, x, 2)
         return x.car().remainder(x.cdr().car())
-    if f._eq(LESS):
+    if f == LESS:
         check_args(f, x, 2)
         return x.car().less(x.cdr().car())
-    if f._eq(GREATER):
+    if f == GREATER:
         check_args(f, x, 2)
         return x.car().greater(x.cdr().car())
-    if f._eq(HELP):
+    if f == HELP:
         check_args(f, x, 0)
         print help_string
         return T
-    if f._eq(QUIT):
+    if f == QUIT:
         check_args(f, x, 0)
         exit()
     if not in_pairlist(f, dList): raise LispException("function {0} not found".format(f))
