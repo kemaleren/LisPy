@@ -17,9 +17,6 @@ ATOM_regex = re.compile("^\w+$|^-[0-9]+$")
 INT_regex = re.compile("^-?[0-9]+$")
 WHITESPACE_regex = re.compile("^\s+$")
 
-#string value of nil:
-NULL_VALUE = "NIL"
-
 #TODO: experiment with my own tail-recursion stack, to avoid recursion depth of python
 
 class LispException(Exception):
@@ -63,7 +60,7 @@ class SExp(object):
 
     def _null(self):
         if self._atom():
-            if self.val == NULL_VALUE: return True
+            if self.val == "NIL": return True
         return False
 
     def null(self):
@@ -83,7 +80,8 @@ class SExp(object):
         return self.val[0]
 
     def cdr(self):
-        if self._atom(): raise LispException("cannot call CDR on atomic s-expression: {0}".format(self))
+        if self._atom():
+            raise LispException("cannot call CDR on atomic s-expression: {0}".format(self))
         return self.val[1]
 
     def _arithmetic(self, other, op):
@@ -149,7 +147,8 @@ class SExp(object):
 
 #basic S-expressions
 T = SExp("T")
-NIL = SExp(NULL_VALUE)
+NIL = SExp("NIL")
+
 CAR = SExp("CAR")
 CDR = SExp("CDR")
 CONS = SExp("CONS")
@@ -169,6 +168,7 @@ HELP = SExp("HELP")
 QUOTE = SExp("QUOTE")
 COND = SExp("COND")
 DEFUN = SExp("DEFUN")
+
 
 def lex(myinput):
     """A generator for tokens in myinput"""
@@ -190,6 +190,7 @@ def lex(myinput):
             raise LispException("bad token: {0}".format(char))
     if not my_atom == "":
         yield my_atom
+
 
 def get_tokens(myinput):
     return [i for i in lex(myinput)]
@@ -246,10 +247,12 @@ def parse(tokens):
     sexp = process_tokens(tokens)
     return sexp
 
+
 def parse_gen(tokens):
     """A generator that parses tokens and returns as many s-expressions as possible"""
     while (len(tokens) > 0):
         yield process_tokens(tokens)
+
 
 def in_pairlist(exp, pairlist):
     if pairlist._null(): return False
@@ -330,7 +333,7 @@ def my_apply(f, x, aList, dList):
         return x.car.atom()
     if f._eq(NULL):
         check_args(f, x, 1)
-        return x.null()
+        return x.car().null()
     if f._eq(EQ):
         check_args(f, x, 2)
         return x.car().eq(x.cdr().car())
@@ -383,6 +386,7 @@ def evcond(be, aList, dList):
     if not (myeval(be.car().car(), aList, dList))._null():
         return myeval(be.car().cdr().car(), aList, dList)
     return evcond(be.cdr(), aList, dList)
+
 
 class bcolors:
     PROMPT = '\033[92m'
