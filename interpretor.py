@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 import re
 import sys
 import copy
@@ -16,7 +18,7 @@ NULL_VALUE = "NIL"
 class LispException(Exception):
     pass
 
-    
+
 class SExp(object):
     def __init__(self, left, right=None):
         """Create an S-expression (left . right). If 'right' is not provided,
@@ -59,7 +61,7 @@ class SExp(object):
     def null(self):
         if self._null(): return T_sexp
         return NIL_sexp
-    
+
     def _int(self):
         if not self._atom() or INT.match(self.val) is None: return False
         return True
@@ -84,7 +86,7 @@ class SExp(object):
 
     def plus(self, other):
         return self._arithmetic(other, lambda a,b: a+b)
-        
+
     def minus(self, other):
         return self._arithmetic(other, lambda a,b: a-b)
 
@@ -102,7 +104,7 @@ class SExp(object):
         if not other._int(): raise LispException("not an int: {0}".format(other))
         if op(int(self.val), int(other.val)): return T_sexp
         return NIL_sexp
-        
+
     def greater(self, other):
         return self._compare(other, lambda a,b: a>b)
 
@@ -201,21 +203,24 @@ def process_tokens(tokens):
     else:
         second = process_list_tokens(tokens)
     return SExp(first, second)
-        
-        
+
+
 def parse(tokens):
     """Parses tokens and returns an s-expression"""
     sexp = process_tokens(tokens)
-    if len(tokens) > 0: raise LispException("extra tokens found: {0}".format(", ".join(tokens)))
     return sexp
 
+def parse_gen(tokens):
+    """A generator that parses tokens and returns as many s-expressions as possible"""
+    while (len(tokens) > 0):
+        yield process_tokens(tokens)
 
 def in_pairlist(exp, pairlist):
     if pairlist._null(): return False
     if pairlist.car()._atom(): raise LispException("a-list or d-list in wrong format")
     if exp._eq(pairlist.car().car()): return True
     return in_pairlist(exp, pairlist.cdr())
-    
+
 
 def getval(exp, from_list):
     if from_list._null(): return NIL_sexp
@@ -237,26 +242,26 @@ def myeval(exp, aList, dList):
         if exp._eq(T_sexp): return T_sexp
         if exp._null(): return NIL_sexp
         if in_pairlist(exp, aList): return getval(exp, aList)
-        raise LispException("unbound variable: {0}".format(exp.val))
+        raise LispException("unbound variable: {0}".format(exp))
     if exp.car()._atom():
         if exp.car().val == "QUOTE": return exp.cdr().car()
         if exp.car().val == "COND": return evcond(exp.cdr(), aList, dList)
-        if exp.car().val == "DEFUN": 
+        if exp.car().val == "DEFUN":
             f = exp.cdr().car()
             args = exp.cdr().cdr().car()
             body = exp.cdr().cdr().cdr().car()
             return defun(f, args, body, dList)
         return my_apply(exp.car(), evlis(exp.cdr(), aList, dList), aList, dList)
     raise LispException("eval called with invalid expression")
-        
-    
+
+
 def evlis(targetlist, aList, dList):
     if targetlist._null(): return NIL_sexp
     return SExp(myeval(targetlist.car(), aList, dList),
                 evlis(targetlist.cdr(), aList, dList))
 
 def my_apply(f, x, aList, dList):
-    
+
     if not f._atom(): raise LispException("error: cannot call non-atom {0} as a function".format(f))
     f.val = f.val.upper()
     if f.val == "CAR": return x.car().car()
@@ -285,7 +290,7 @@ def defun(f, args, body, dList):
     new_dList = SExp(SExp(f, SExp(args, body)), copy.copy(dList))
     dList.val = new_dList.val
     return f
-    
+
 
 def evcond(be, aList, dList):
     if be._null(): raise LispException("boolean expression cannot be NIL")
@@ -318,7 +323,9 @@ def interpreter(dList):
             while not balanced(tokens):
                 entry = raw_input("")
                 tokens += get_tokens(entry)
-            print bcolors.OKBLUE + " OUT: " + bcolors.ENDC + str(myeval(parse(tokens), NIL_sexp, dList))
+            sexp = parse(tokens)
+            if len(tokens) > 0: raise LispException("extra tokens found: {0}".format(tokens))
+            print bcolors.OKBLUE + " OUT: " + bcolors.ENDC + str(myeval(sexp, NIL_sexp, dList))
             print ""
         except KeyboardInterrupt:
             print ""
@@ -327,14 +334,23 @@ def interpreter(dList):
         except LispException as inst:
             print bcolors.FAIL + " ERR: " + bcolors.ENDC + inst.args[0]
             print ""
-            
+
 
 if __name__ == "__main__":
     dList = copy.copy(NIL_sexp)
-    try:
-        if len(sys.argv) == 1: interpreter(dList)
-    except EOFError:
-        print ""
-        
-    else:
-        print "error - command-line options not yet implemented"
+
+    if len(sys.argv) == 1:
+        try:
+            interpreter(dList)
+        except EOFError:
+            print ""
+    elif len(sys.argv) == 2:
+        infile = file(sys.argv[1], "r")
+        tokens = get_tokens(infile.read())
+        for sexp in parse_gen(tokens):
+            try:
+                print str(myeval(sexp, NIL_sexp, dList))
+            except LispException as inst:
+                print "error: " + inst.args[0]
+        infile.close()
+
