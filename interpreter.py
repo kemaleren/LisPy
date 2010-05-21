@@ -516,6 +516,8 @@ def interpreter(dList):
         except LispException as inst:
             print bcolors.FAIL + " ERR: " + bcolors.ENDC + inst.args[0]
             print ""
+        except RuntimeError:
+            print "error: eval failed. deep recursion not yet supported."
 
 
 if __name__ == "__main__":
@@ -534,6 +536,8 @@ if __name__ == "__main__":
                 print str(eval_lisp(sexp, SExp("NIL"), dList))
             except LispException as inst:
                 print "error: " + inst.args[0]
+            except RuntimeError:
+                print "runtime error. deep recursion not yet supported"
         infile.close()
     else:
         print "Usage: interpreter.py [input file]"
