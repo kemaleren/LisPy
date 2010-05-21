@@ -14,7 +14,7 @@ import copy
 
 #some useful regexes:
 ATOM_regex = re.compile("^[0-9a-zA-Z%*\-\+/=<>]+$")
-INT_regex = re.compile("^-?[0-9]+$")
+INT_regex = re.compile("^-?[0-9]+$|^\+?[0-9]+$")
 WHITESPACE_regex = re.compile("^\s+$")
 
 #TODO: experiment with my own tail-recursion stack, to avoid recursion depth of python
@@ -358,7 +358,7 @@ def eval_lisp(exp, aList, dList):
         if not exp.car().non_int_atom: raise LispException("'{0}' is not a valid function name or special form".format(exp.car()))
         #cdar because cdr only would give (quote 5) evaluating to (5), not 5. only takes one argument.
         if exp.car() in QUOTE:
-            check_args(exp.car(), exp.cdr().lengt(), 1)
+            check_args(exp.car(), exp.cdr().length(), 1)
             return exp.cdr().car() 
         if exp.car() in COND: return evcond(exp.cdr(), aList, dList)
         if exp.car() in DEFUN:
@@ -398,7 +398,7 @@ def apply_lisp(f, x, aList, dList):
         return x.car().cdr() #cadr
     if f in CONS:
         check_args(f, x.length(), 2)
-        return SExp(x.car(), x.cdr()) #two arguments
+        return SExp(x.car(), x.cdr().car()) #two arguments. the second one is (s . nil) but we only want the s
     if f in ATOM:
         check_args(f, x.length(), 1)
         return x.car().atom(sexp=True)
