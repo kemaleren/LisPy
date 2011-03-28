@@ -28,12 +28,11 @@ class SExp(object):
             if not isinstance(left, SExp) or not isinstance(right, SExp):
                 raise LispException("not an S-expression")
             self.val = (left, right)
-        self.bool_sexps = {True: "T", False: "NIL"}
 
 
     def atom(self, sexp=False):
         result = type(self.val) == type("")
-        if sexp: return SExp(self.bool_sexps[result])
+        if sexp: return BOOL_SEXPS[result]
         return result
 
     def __eq__(self, other):
@@ -47,14 +46,14 @@ class SExp(object):
     def eq(self, other, sexp=False):
         result = False
         if self.__eq__(other): result = True
-        if sexp: return SExp(self.bool_sexps[result])
+        if sexp: return BOOL_SEXPS[result]
         return result
 
     def null(self, sexp=False):
         result = False
         if self.atom():
             if self.val == "NIL": result = True
-        if sexp: return SExp(self.bool_sexps[result])
+        if sexp: return BOOL_SEXPS[result]
         return result
 
     def int(self, sexp=False):
@@ -62,7 +61,7 @@ class SExp(object):
         if self.atom():
             if INT_regex.match(self.val) is not None:
                 result = True
-        if sexp: return SExp(self.bool_sexps[result])
+        if sexp: return BOOL_SEXPS[result]
         return result
 
     def car(self):
@@ -145,3 +144,6 @@ class SExp(object):
 
     def copy(self, other):
         self.val = other.val
+
+
+BOOL_SEXPS = {True: SExp("T"), False: SExp("NIL")}
