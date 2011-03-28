@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python2
 
 """
 interpreter.py
@@ -58,6 +58,17 @@ def interpreter(d_list):
             print ""
         except RuntimeError:
             print "error: eval failed. deep recursion not yet supported."
+        except EOFError:
+            entry = None
+            aff = ['yes', 'y', '']
+            neg = ['no', 'n']
+            while not entry in aff + neg:
+                print bcolors.WARNING + "\nexit? (Y/n):" + bcolors.ENDC,
+                entry = raw_input("").lower()
+            if entry in aff:
+                sys.exit()
+            print
+            
 
 
 def eval_lisp(exp, a_list, d_list):
