@@ -1,4 +1,9 @@
-"""Functions used for parsing input to the interpreter."""
+"""
+Functions used for parsing input to the interpreter.
+
+The basic approach used by the parser was suggested by Neelam Soundarajan.
+
+"""
 
 from regexes import ATOM_regex, INT_regex, WHITESPACE_regex
 from sexp import SExp
