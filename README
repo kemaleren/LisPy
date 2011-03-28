@@ -6,8 +6,34 @@ Updated: 27 March 2011
 ABOUT
 -----
 
-LisPy is a minimal implementation of most of the features of LISP 1.5,
+LisPy is an implementation of a subset of the features of LISP 1.5,
 as outlined in John McCarthy's [LISP 1.5 Programmer's Manual][manual].
+
+The following primitives are defined:
+
+* T
+* NIL
+* CAR
+* CDR
+* CONS
+* ATOM
+* EQ
+* NULL
+* INT
+* PLUS
+* MINUS
+* TIMES
+* QUOTIENT
+* REMAINDER
+* LESS
+* GREATER
+* COND
+* QUOTE
+* DEFUN
+* HELP
+* QUIT
+
+and various math symbols: + - % * / = < >
 
 LisPy supports both interactive and batch modes.
 
@@ -21,7 +47,11 @@ REQUIREMENTS
 USAGE
 -----
 
-NB: atoms in this implementation are case-insensitive.
+NB: LisPy is case-insensitive, and allows both dot and list notation
+(though they may not be mixed).
+
+See 'demo.lsp' for some simple examples.
+
 
 ### Interactive mode:
 
