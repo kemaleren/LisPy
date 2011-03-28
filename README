@@ -1,28 +1,50 @@
-*ABOUT*
- -----
-This is a minimal implementation of most of the features of LISP 1.5.
-The LISP interpreter supports both interactive and batch modes.
+LisPy README
+============
+Author: Kemal Eren (kemal.eren.dev@gmail.com)
+Updated: 27 March 2011
 
-Note: atoms in this implementation are case-insensitive.
+ABOUT
+-----
 
- -----
-*USAGE*
- -----
+LisPy is a minimal implementation of most of the features of LISP 1.5,
+as outlined in John McCarthy's [LISP 1.5 Programmer's Manual][manual].
 
-*Interactive mode: Simply run './interpreter.py' to start an interactive
- ----------------  toplevel. LISP commands may be entered over multiple lines;
-                   a command will not be evaluated until the parentheses
-		   match.
-
-                   Pressing "Control+c" abandons the current expression
-		   and starts a new line. Calling (help) gives some minimal
-		   help.
-
-		   When finished, type (quit) or press "Control+d" to exit.
+LisPy supports both interactive and batch modes.
 
 
-*Batch mode:       Run './interpreter.py <input file>'. All expressions in the
- ----------	   file will be read, evaluated, and printed in order to
-                   standard output.
+REQUIREMENTS
+------------
+
+* Python (tested with 2.6 and 2.7)
+
+
+USAGE
+-----
+
+NB: atoms in this implementation are case-insensitive.
+
+### Interactive mode:
+
+In interactive mode, individual LISP commands may be entered
+into the REPL (read-eval-print loop).
+
+Simply run './interpreter.py' to start an interactive
+toplevel. LISP commands may be entered over multiple lines;
+a command will not be evaluated until the parentheses
+match.
+
+Pressing "Control+c" abandons the current expression
+and starts a new line. Calling (help) gives some minimal
+help.
+
+When finished, type (quit) or press "Control+d" to exit.
+
+
+### Batch mode
+
+Run './interpreter.py <input file>'. All expressions in the
+file will be read, evaluated, and printed in order to
+standard output.
          
 
+[manual]: http://www.softwarepreservation.org/projects/LISP/book/LISP%201.5%20Programmers%20Manual.pdf
