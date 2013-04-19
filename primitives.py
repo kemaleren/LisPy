@@ -2,15 +2,27 @@
 
 from sexp import SExp
 
-#TODO: This way of instantiating primitives (and s-expressions in general) is way too hacky.
-#      First, they are created multiple times, manually.
-#      Second, each special form and built-in function needs to know the explicty name of the S-expression anways.
-#      Refactor to make more natural, and to encapsulate S-expression logic, especially for special forms.
+# TODO: This way of instantiating primitives (and s-expressions in
+# general) is way too hacky.
+#
+# First, they are created multiple times, manually.
+#
+# Second, each special form and built-in function needs to know the
+# explicty name of the S-expression anways.
+#
+# Refactor to make more natural, and to encapsulate S-expression
+# logic, especially for special forms.
 
-PRIMITIVES_STRING = "T NIL CAR CDR CONS ATOM EQ NULL INT PLUS MINUS TIMES QUOTIENT REMAINDER LESS GREATER COND QUOTE DEFUN HELP QUIT + - % * / = < >"
+PRIMITIVES_STRING = "T NIL CAR CDR CONS ATOM EQ NULL INT" \
+                    "PLUS MINUS TIMES QUOTIENT REMAINDER" \
+                    "LESS GREATER COND QUOTE DEFUN HELP" \
+                    "QUIT + - % * / = < >"
 PRIMITIVES = [i for i in PRIMITIVES_STRING.split()]
 
-help_string = "Available primitives:\n{0}\n\nFurther help not currently available.".format(PRIMITIVES_STRING)
+help_string = """Available primitives:
+{0}
+
+Further help not currently available.""".format(PRIMITIVES_STRING)
 
 #BASIC S-EXPRESSIONS
 #TODO: don't do this manually

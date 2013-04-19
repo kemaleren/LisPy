@@ -1,15 +1,18 @@
 from error import LispException
-from regexes import ATOM_regex, INT_regex, WHITESPACE_regex
+from regexes import ATOM_regex, INT_regex
+
 
 class SExp(object):
-    """
-    The S-Expression class. Each s-expression can be atomic, or it has two s-expression children, CAR and CDR.
+    """The S-Expression class. Each s-expression can be atomic, or it
+    has two s-expression children, CAR and CDR.
 
-    Member functions implement most of the basic primitive functions that are not special forms, such as
-    addition, subtraction, checking whether an integer, etc.
+    Member functions implement most of the basic primitive functions
+    that are not special forms, such as addition, subtraction,
+    checking whether an integer, etc.
 
-    Boolean member functions return Python's True and False. However, if the optional 'sexp' argument evaluates to
-    True, they instead return the primitive s-expressions T and NIL.
+    Boolean member functions return Python's True and False. However,
+    if the optional 'sexp' argument is True, they instead return the
+    primitive s-expressions T and NIL.
 
     """
 
@@ -20,24 +23,29 @@ class SExp(object):
         """
         if right is None:
             if not isinstance(left, str):
-                raise LispException("trying to create an S-expression from {0}".format(str(left)))
+                msg = "trying to create S-expression from {0}".format(str(left))
+                raise LispException(msg)
             if ATOM_regex.match(left) is None:
-                raise LispException("not a valid atomic S-expression: {0}".format(left))
+                msg = "not a valid atomic S-expression: {0}".format(left)
+                raise LispException(msg)
             self.val = left.upper()
         else:
             if not isinstance(left, SExp) or not isinstance(right, SExp):
                 raise LispException("not an S-expression")
             self.val = (left, right)
 
-
     def atom(self, sexp=False):
-        result = type(self.val) == type("")
-        if sexp: return BOOL_SEXPS[result]
+        result = isinstance(self.val, str)
+        if sexp:
+            return BOOL_SEXPS[result]
         return result
 
     def __eq__(self, other):
-        if not self.atom(): raise LispException("not an atomic S-expression: {0}".format(self))
-        if not other.atom(): raise LispException("not an atomic S-expression: {0}".format(other))
+        if not self.atom():
+            raise LispException("not an atomic S-expression: {0}".format(self))
+        if not other.atom():
+            msg = "not an atomic S-expression: {0}".format(other)
+            raise LispException(msg)
         return self.val == other.val
 
     def __ne__(self, other):
@@ -45,15 +53,19 @@ class SExp(object):
 
     def eq(self, other, sexp=False):
         result = False
-        if self.__eq__(other): result = True
-        if sexp: return BOOL_SEXPS[result]
+        if self.__eq__(other):
+            result = True
+        if sexp:
+            return BOOL_SEXPS[result]
         return result
 
     def null(self, sexp=False):
         result = False
         if self.atom():
-            if self.val == "NIL": result = True
-        if sexp: return BOOL_SEXPS[result]
+            if self.val == "NIL":
+                result = True
+        if sexp:
+            return BOOL_SEXPS[result]
         return result
 
     def int(self, sexp=False):
@@ -61,67 +73,82 @@ class SExp(object):
         if self.atom():
             if INT_regex.match(self.val) is not None:
                 result = True
-        if sexp: return BOOL_SEXPS[result]
+        if sexp:
+            return BOOL_SEXPS[result]
         return result
 
     def car(self):
-        if self.atom(): raise LispException("cannot call CAR on atomic s-expression: {0}".format(self))
+        if self.atom():
+            msg = "cannot call CAR on atomic s-expression: {0}".format(self)
+            raise LispException(msg)
         return self.val[0]
 
     def cdr(self):
         if self.atom():
-            raise LispException("cannot call CDR on atomic s-expression: {0}".format(self))
+            msg = "cannot call CDR on atomic s-expression: {0}".format(self)
+            raise LispException(msg)
         return self.val[1]
 
     def _arithmetic(self, other, op):
-        if not self.int(): raise LispException("not an int: {0}".format(self))
-        if not other.int(): raise LispException("not an int: {0}".format(other))
+        if not self.int():
+            raise LispException("not an int: {0}".format(self))
+        if not other.int():
+            raise LispException("not an int: {0}".format(other))
         return SExp(str(op(int(self.val),
                            int(other.val))))
 
     def plus(self, other):
-        return self._arithmetic(other, lambda a, b: a+b)
+        return self._arithmetic(other, lambda a, b: a + b)
 
     def minus(self, other):
-        return self._arithmetic(other, lambda a, b: a-b)
+        return self._arithmetic(other, lambda a, b: a - b)
 
     def times(self, other):
-        return self._arithmetic(other, lambda a, b: a*b)
+        return self._arithmetic(other, lambda a, b: a * b)
 
     def quotient(self, other):
-        return self._arithmetic(other, lambda a, b: a/b)
+        return self._arithmetic(other, lambda a, b: a / b)
 
     def remainder(self, other):
-        return self._arithmetic(other, lambda a, b: a%b)
+        return self._arithmetic(other, lambda a, b: a % b)
 
     def _compare(self, other, op):
-        if not self.int(): raise LispException("not an int: {0}".format(self))
-        if not other.int(): raise LispException("not an int: {0}".format(other))
-        if op(int(self.val), int(other.val)): return SExp("T")
+        if not self.int():
+            raise LispException("not an int: {0}".format(self))
+        if not other.int():
+            raise LispException("not an int: {0}".format(other))
+        if op(int(self.val), int(other.val)):
+            return SExp("T")
         return SExp("NIL")
 
     def greater(self, other):
-        return self._compare(other, lambda a, b: a>b)
+        return self._compare(other, lambda a, b: a > b)
 
     def less(self, other):
-        return self._compare(other, lambda a, b: a<b)
+        return self._compare(other, lambda a, b: a < b)
 
     def is_list(self):
-        if self.null(): return True
-        if self.atom(): return False
-        if self.val[1].is_list(): return True
+        if self.null():
+            return True
+        if self.atom():
+            return False
+        if self.val[1].is_list():
+            return True
         return False
 
     def length(self):
         if not self.is_list():
             raise LispException("calling length on non-list {0}".format(self))
-        if self.null(): return 0
-        return 1+self.val[1].length()
+        if self.null():
+            return 0
+        return 1 + self.val[1].length()
 
     def non_int_atom(self):
         """Checks if this is an atom, but not an integer"""
-        if not self.atom(): return False
-        if INT_regex.match(self.val) is not None: return False
+        if not self.atom():
+            return False
+        if INT_regex.match(self.val) is not None:
+            return False
         return True
 
     def _repr_helper(self):
@@ -130,9 +157,8 @@ class SExp(object):
         return " {0}{1}".format(self.val[0], self.val[1]._repr_helper())
 
     def __repr__(self):
-        """
-        Creates the string representation of the S-expression. Uses list notation
-        whenever possible.
+        """Creates the string representation of the S-expression. Uses
+        list notation whenever possible.
 
         """
         if self.atom():
