@@ -1,16 +1,18 @@
 * rewrite more elegently. There are C++ versions with fewer lines!
 
-* implementation is an almost exact translation from the LISP meta-definition. Instead,
-  use some other functions and data structures to speed it up and make the code easier to
-  read. This goes along with the tail recursion idea, too.
+* implementation is an almost exact translation from the LISP
+  meta-definition. Instead, use some other functions and data
+  structures to speed it up and make the code easier to read. This
+  goes along with the tail recursion idea, too.
 
-* Don't rely on Python for recursion: it only supports up to 1000 recursive calls, and
-  has no support for tail recursion. Instead, use my own stack and implement tail
-  recursion.
+* Don't rely on Python for recursion: it only supports up to 1000
+  recursive calls, and has no support for tail recursion. Instead, use
+  my own stack and implement tail recursion.
 
 * write a garbage collection algorithm rather than relying on Python.
 
-* add support for arbitrary car and cdr composites (eg caar, cadaddr, etc)
+* add support for arbitrary car and cdr composites (eg caar, cadaddr,
+  etc)
 
 * implement higher order functions
 
@@ -20,7 +22,8 @@
 
 * make what can be an atom more restrictive
 
-* change s-expression class to not rely on so many regular expression calls. class system?
+* change s-expression class to not rely on so many regular expression
+  calls. class system?
 
 * write a more formal scanner/lexer/parser combo
 
@@ -28,19 +31,20 @@
 
 * Allow dumping to file from interpreter
 
-* Find a more elegent way to represent primitives, rather than just instantiating them
-  from hard-coded strings.
+* Find a more elegent way to represent primitives, rather than just
+  instantiating them from hard-coded strings.
 
-* Extend help system. Make it available to users, so that they can write help comments
-  for their user-defined functions.
+* Extend help system. Make it available to users, so that they can
+  write help comments for their user-defined functions.
 
 * floating point numbers
 
-* write other LISP functions, like apply, mapcar, reverse, len, flatten, last, member, append, etc.
-  Perhaps write these in LISP (see TODO about making extensible)
+* write other LISP functions, like apply, mapcar, reverse, len,
+  flatten, last, member, append, etc. Perhaps write these in LISP (see
+  TODO about making extensible)
 
-* allow importing from other files. Use this to extend my language with functions written in
-  LISP.
+* allow importing from other files. Use this to extend my language
+  with functions written in LISP.
 
 * write a compiler (look at LLVM)
 
