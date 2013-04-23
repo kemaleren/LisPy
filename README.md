@@ -5,8 +5,9 @@ Author: Kemal Eren (kemal@kemaleren.com)
 ABOUT
 -----
 
-LisPy is an implementation of a subset of the features of LISP 1.5,
-as outlined in John McCarthy's [LISP 1.5 Programmer's Manual][manual].
+LisPy is an implementation of a subset of the features of LISP 1.5, as
+outlined in John McCarthy's [LISP 1.5 Programmer's
+Manual](http://www.softwarepreservation.org/projects/LISP/book/LISP%201.5%20Programmers%20Manual.pdf).
 
 The following primitives are defined:
 
@@ -74,6 +75,3 @@ When finished, type (quit) or press "Control+d" to exit.
 Run './interpreter.py <input file>'. All expressions in the
 file will be read, evaluated, and printed in order to
 standard output.
-         
-
-[manual]: http://www.softwarepreservation.org/projects/LISP/book/LISP%201.5%20Programmers%20Manual.pdf
