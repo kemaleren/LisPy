@@ -50,7 +50,7 @@ USAGE
 NB: LisPy is case-insensitive, and allows both dot and list notation
 (though they may not be mixed).
 
-See 'demo.lsp' for some simple examples.
+See `demo.lsp` for some simple examples.
 
 
 ### Interactive mode:
@@ -58,7 +58,7 @@ See 'demo.lsp' for some simple examples.
 In interactive mode, individual LISP commands may be entered
 into the REPL (read-eval-print loop).
 
-Simply run './interpreter.py' to start an interactive
+Simply run `./interpreter.py` to start an interactive
 toplevel. LISP commands may be entered over multiple lines;
 a command will not be evaluated until the parentheses
 match.
@@ -67,11 +67,11 @@ Pressing "Control+c" abandons the current expression
 and starts a new line. Calling (help) gives some minimal
 help.
 
-When finished, type (quit) or press "Control+d" to exit.
+When finished, type `(quit)` or press "Control+d" to exit.
 
 
 ### Batch mode
 
-Run './interpreter.py <input file>'. All expressions in the
+Run `./interpreter.py <input file>`. All expressions in the
 file will be read, evaluated, and printed in order to
 standard output.
